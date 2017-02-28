@@ -38,7 +38,7 @@ public class Ext_HttpClientTest {
 	// http_post
 	private static final String URI_HTTP_POST = "http://post.example/";
 	private static final String POST_PARAMS = "key1=value1&key2=value2&key3=value3";
-	private static final String POST_CONTENT_TYPE = "text/plain";
+	private static final String POST_CONTENT_TYPE = "application/x-www-form-urlencoded;";
 
 	// headers
 	private static final String HEADER_KEY = "Accept";

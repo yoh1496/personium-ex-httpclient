@@ -11,57 +11,53 @@ This can use "GET" and "POST" request only.
 ## Usage (GET)
 
 ````
-  var urlY = "http://www.example.com/";
-  var headersY = {'Accept': 'application/json'};
+  var url = "http://www.example.com/";
+  var headers = {'Accept': 'application/json'};
 
   try {
       var httpclient = new _p.extension.HttpClient();
-      var apiRes = { status: "", headers : {}, body :"" };
-      apiRes = httpclient.get(urlY, headersY);
+      var response = { status: "", headers : {}, body :"" };
+      response = httpclient.get(url, headers);
   } catch (e) {
       return {
           status: 500,
-          headers: {"Content-Type":"text/plain"},
-          body: ["Server Error occured" + e]
+          headers: {"Content-Type":"text/html"},
+          body: ["Server Error occurred. " + e]
       };
   }
-  if (apiRes !==  null && apiRes.status === "200") {
-      return {
-          status: 200,
-          headers: {"Conent-Type":"text/plain"},
-          body: ['{"status":' + apiRes.status + ', "resHeaders" '+ apiRes.headers.toString() +' "resBody":'+ apiRes.body.toString() + '}']
-      };
-  }
+  return {
+      status: 200,
+      headers: {"Content-Type":"text/plain"},
+      body: ['{"status":' + response.status + ', "headers" ' + response.headers.toString()
+           + ' "body":' + response.body + '}']
+  };
 
 ````
 ## Usage (POST)
 
 ````
-  var urlY = "http://www.example.com/";
-  var bodyY = "bodyParameter1=XXXXX&bodyParameter2=YYYYY";
-  var contentTypeY = "application/x-www-form-urlencoded;";
-  var headersY = {'Accept': 'application/json'};
-
+  var url = "http://www.example.com/";
+  var body = "bodyParameter1=XXXXX&bodyParameter2=YYYYY";
+  var contentType = "application/x-www-form-urlencoded;";
+  var headers = {'Accept': 'application/json'};
 
   try {
       var httpclient = new _p.extension.HttpClient();
-      var apiRes = { status: "", headers : {}, body :"" };
-      apiRes = httpclient.post(urlY, bodyY, contentTypeY, headersY);;
+      var response = { status: "", headers : {}, body :"" };
+      response = httpclient.post(url, body, contentType, headers);
   } catch (e) {
       return {
           status: 500,
-          headers: {"Content-Type":"text/plain"},
-          body: ["Server Error occured" + e]
+          headers: {"Content-Type":"text/html"},
+          body: ["Server Error occurred. " + e]
       };
   }
-  if (apiRes !==  null && apiRes.status === "200") {
-      return {
-          status: 200,
-          headers: {"Conent-Type":"text/plain"},
-          body: ['{"status":' + apiRes.status + ', "resHeaders" '+ apiRes.headers.toString() +' "resBody":'+ apiRes.body.toString() + '}']
-      };
-  }
-
+  return {
+      status: 200,
+      headers: {"Content-Type":"application/json"},
+      body: ['{"status":' + response.status + ', "headers" ' + response.headers.toString()
+           + ' "body":'+ response.body + '}']
+  };
 
 ````
 
