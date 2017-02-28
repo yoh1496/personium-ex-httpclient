@@ -71,11 +71,11 @@ public class Ext_HttpClientTest {
          * String uri, NativeObject headers
          */
     	NativeObject result = ext_httpClient.get(URI_HTTP_GET, headers);
-    	String req_status = (String)result.get("status");
-    	String req_body = (String)result.get("body");
-    	String req_headers = (String)result.get("headers");
+    	String res_status = (String)result.get("status");
+    	String res_body = (String)result.get("body");
+    	String res_headers = (String)result.get("headers");
 
-    	assertEquals(Integer.parseInt(req_status), HttpStatus.SC_OK);
+    	assertEquals(Integer.parseInt(res_status), HttpStatus.SC_OK);
     }
 
     @Test
@@ -91,10 +91,10 @@ public class Ext_HttpClientTest {
          */
     	NativeObject result = ext_httpClient.post(URI_HTTP_POST, POST_PARAMS,
     			POST_CONTENT_TYPE, headers);
-    	String req_status = (String)result.get("status");
-    	String req_body = (String)result.get("body");
-    	String req_headers = (String)result.get("headers");
+    	String res_status = (String)result.get("status");
+    	String res_body = (String)result.get("body");
+    	String res_headers = (String)result.get("headers");
 
-    	assertEquals(Integer.parseInt(req_status), HttpStatus.SC_OK);
+    	assertEquals(Integer.parseInt(res_status), HttpStatus.SC_OK);
     }
 }
