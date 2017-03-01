@@ -2,17 +2,17 @@
 
 ## About
 
-This is a [Personium](http://personium.io)'s Engine extension for enable HTTP request from server-side script.
+[Personium](http://personium.io) Engine Extension to provide HTTP client functionality.
 
 ## Note
 
-This can use "GET" and "POST" request only.
+Supported methods are "GET" and "POST" only at this point.
 
 ## Usage (GET)
 
 ````
   var url = "http://www.example.com/";
-  var headers = {'Accept': 'application/json'};
+  var headers = {'Accept': 'text/plain'};
 
   try {
       var httpclient = new _p.extension.HttpClient();
@@ -39,7 +39,7 @@ This can use "GET" and "POST" request only.
   var url = "http://www.example.com/";
   var body = "bodyParameter1=XXXXX&bodyParameter2=YYYYY";
   var contentType = "application/x-www-form-urlencoded;";
-  var headers = {'Accept': 'application/json'};
+  var headers = {'Accept': 'text/plain'};
 
   try {
       var httpclient = new _p.extension.HttpClient();
