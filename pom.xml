@@ -1,6 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>personium.io</groupId>
+	<groupId>io.personium</groupId>
 	<artifactId>personium-ex-httpclient</artifactId>
 	<version>1.0.1</version>
 	<packaging>jar</packaging>
@@ -32,7 +32,7 @@
 		<dependency>
 			<groupId>io.personium</groupId>
 			<artifactId>personium-ex-base</artifactId>
-			<version>1.4.2</version>
+            <version>1.4.3-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
@@ -48,7 +48,7 @@
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
-		    <version>4.3.4</version>
+		    <version>4.5.2</version>
 			<exclusions>
 				<exclusion>
 					<groupId>commons-logging</groupId>
@@ -56,6 +56,11 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <version>4.5.2</version>
+        </dependency>
 		<dependency>
 			<groupId>com.googlecode.json-simple</groupId>
 			<artifactId>json-simple</artifactId>
@@ -107,4 +112,12 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<distributionManagement>
+		<repository>
+			<id>personium.io</id>
+			<name>personium.io</name>
+			<url>http://personium.io/mvnrepo</url>
+		</repository>
+	</distributionManagement>
 </project>
