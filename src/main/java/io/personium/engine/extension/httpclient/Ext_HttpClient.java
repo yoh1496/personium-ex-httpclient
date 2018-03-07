@@ -497,42 +497,38 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
 
     private CloseableHttpClient createHTTPClient() {
         String host = java.lang.System.getProperty("http.proxyHost");
-        int port =  java.lang.Integer.getInteger("http.proxyPort");
+        Integer port =  java.lang.Integer.getInteger("http.proxyPort");
         String id =  java.lang.System.getProperty("http.proxyUser");
         String pass =  java.lang.System.getProperty("http.proxyPassword");
+        CloseableHttpClient httpclient;
         
-        if (!TextUtils.isEmpty(host)){
-            if(!TextUtils.isEmpty(pass)){
-                // use proxy with authentication
-                HttpHost proxy = new HttpHost(host, port);
-                CredentialsProvider credsProvider = new BasicCredentialsProvider();
-                credsProvider.setCredentials(
-                    new AuthScope(proxy),
-                    new UsernamePasswordCredentials(id, pass));
-                RequestConfig config = RequestConfig.custom()
-                    .setProxy(proxy)
-                    .build();
-                CloseableHttpClient httpclient = HttpClients.custom()
-                    .setDefaultCredentialsProvider(credsProvider)
-                    .setDefaultRequestConfig(config)
-                    .build();
-                return httpclient;
-            }
-            
-            // use proxy
+        if (TextUtils.isEmpty(host)){
+            // default
+            httpclient = HttpClientBuilder.create().build();
+        }else{
             HttpHost proxy = new HttpHost(host, port);
             RequestConfig config = RequestConfig.custom()
                     .setProxy(proxy)
                     .build();
-            CloseableHttpClient httpclient = HttpClients.custom()
+
+            if(TextUtils.isEmpty(pass)){
+                // use proxy without authentication
+                httpclient = HttpClients.custom()
                     .setDefaultRequestConfig(config)
                     .build();
-            return httpclient;
+            }else{
+                // use proxy with authentication
+                CredentialsProvider credsProvider = new BasicCredentialsProvider();
+                credsProvider.setCredentials(
+                    new AuthScope(proxy),
+                    new UsernamePasswordCredentials(id, pass));
+                httpclient = HttpClients.custom()
+                    .setDefaultCredentialsProvider(credsProvider)
+                    .setDefaultRequestConfig(config)
+                    .build();
+            }            
         }
-        
-        // default
-        CloseableHttpClient httpclient = HttpClientBuilder.create().build();
+         
         return httpclient;
     }
-    
 }
