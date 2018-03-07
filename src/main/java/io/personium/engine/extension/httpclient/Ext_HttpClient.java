@@ -167,6 +167,19 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
     }
     
     /**
+     * post (String).
+     * @param uri String
+     * @param headers NativeObject
+     * @param contentType String
+     * @param params String
+     * @return NativeObject
+     */
+    @JSFunction
+    public NativeObject post(String uri, NativeObject headers, String contentType, String params) {
+        return post(uri, headers, contentType, params, null, null);
+    }
+
+    /**
      * putParam (String).
      * @param uri String
      * @param headers NativeObject
@@ -176,6 +189,19 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
      */
     @JSFunction
     public NativeObject putParam(String uri, NativeObject headers, String contentType, String params) {
+        return put(uri, headers, contentType, params, null, null);
+    }
+    
+    /**
+     * put (String).
+     * @param uri String
+     * @param headers NativeObject
+     * @param contentType String
+     * @param params String
+     * @return NativeObject
+     */
+    @JSFunction
+    public NativeObject put(String uri, NativeObject headers, String contentType, String params) {
         return put(uri, headers, contentType, params, null, null);
     }
 
@@ -211,9 +237,6 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
             // Retrieve the status.
             int status = res.getStatusLine().getStatusCode();
             log.debug("delete status:" + status);
-            if (status != HttpStatus.SC_NO_CONTENT) {
-                return null;
-            }
 
             // Retrieve the response headers.
             JSONObject res_headers = new JSONObject();
@@ -338,9 +361,6 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
 
             // Retrieve the status.
             int status = res.getStatusLine().getStatusCode();
-            if (status != HttpStatus.SC_OK) {
-                return null;
-            }
 
             // response headers
             JSONObject res_headers = new JSONObject();
@@ -443,9 +463,6 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
 
             // Retrieve the status.
             int status = res.getStatusLine().getStatusCode();
-            if (status != HttpStatus.SC_OK) {
-                return null;
-            }
 
             // response headers
             JSONObject res_headers = new JSONObject();
