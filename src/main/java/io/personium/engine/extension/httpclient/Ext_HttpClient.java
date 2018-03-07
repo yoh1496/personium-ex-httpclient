@@ -44,6 +44,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.apache.http.util.TextUtils;
 import org.json.simple.JSONObject;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.annotations.JSConstructor;
@@ -163,7 +164,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
      */
     @JSFunction
     public NativeObject postParam(String uri, NativeObject headers, String contentType, String params) {
-        return post(uri, headers, contentType, params, null, null);
+        return postX(uri, headers, contentType, params, null, null);
     }
     
     /**
@@ -176,7 +177,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
      */
     @JSFunction
     public NativeObject post(String uri, NativeObject headers, String contentType, String params) {
-        return post(uri, headers, contentType, params, null, null);
+        return postX(uri, headers, contentType, params, null, null);
     }
 
     /**
@@ -189,7 +190,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
      */
     @JSFunction
     public NativeObject putParam(String uri, NativeObject headers, String contentType, String params) {
-        return put(uri, headers, contentType, params, null, null);
+        return putX(uri, headers, contentType, params, null, null);
     }
     
     /**
@@ -202,7 +203,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
      */
     @JSFunction
     public NativeObject put(String uri, NativeObject headers, String contentType, String params) {
-        return put(uri, headers, contentType, params, null, null);
+        return putX(uri, headers, contentType, params, null, null);
     }
 
     /**
@@ -291,7 +292,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
 //    }
 
     /**
-     * Post.
+     * PostX.
      * @param uri String
      * @param headers NativeObject
      * @param contentType String
@@ -300,7 +301,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
      * @param fileName String
      * @return NativeObject
      */
-    private NativeObject post(String uri, NativeObject headers, String contentType,
+    private NativeObject postX(String uri, NativeObject headers, String contentType,
                               String params, PersoniumInputStream pis, String fileName) {
     	NativeObject result = null;
 
@@ -393,7 +394,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
     }
        
     /**
-     * put.
+     * putX.
      * @param uri String
      * @param headers NativeObject
      * @param contentType String
@@ -402,7 +403,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
      * @param fileName String
      * @return NativeObject
      */
-    private NativeObject put(String uri, NativeObject headers, String contentType,
+    private NativeObject putX(String uri, NativeObject headers, String contentType,
                               String params, PersoniumInputStream pis, String fileName) {
     	NativeObject result = null;
 
@@ -499,24 +500,26 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
         int port =  java.lang.Integer.getInteger("http.proxyPort");
         String id =  java.lang.System.getProperty("http.proxyUser");
         String pass =  java.lang.System.getProperty("http.proxyPassword");
-
-        if(pass != null || !pass.isEmpty()){
-            // use proxy with authentication
-            HttpHost proxy = new HttpHost(host, port);
-            CredentialsProvider credsProvider = new BasicCredentialsProvider();
-            credsProvider.setCredentials(
+        
+        if (!TextUtils.isEmpty(host)){
+            if(!TextUtils.isEmpty(pass)){
+                // use proxy with authentication
+                HttpHost proxy = new HttpHost(host, port);
+                CredentialsProvider credsProvider = new BasicCredentialsProvider();
+                credsProvider.setCredentials(
                     new AuthScope(proxy),
                     new UsernamePasswordCredentials(id, pass));
-            RequestConfig config = RequestConfig.custom()
+                RequestConfig config = RequestConfig.custom()
                     .setProxy(proxy)
                     .build();
-            CloseableHttpClient httpclient = HttpClients.custom()
+                CloseableHttpClient httpclient = HttpClients.custom()
                     .setDefaultCredentialsProvider(credsProvider)
                     .setDefaultRequestConfig(config)
                     .build();
-            return httpclient;
-        }else if(host != null || !host.isEmpty()){
-        	// use proxy
+                return httpclient;
+            }
+            
+            // use proxy
             HttpHost proxy = new HttpHost(host, port);
             RequestConfig config = RequestConfig.custom()
                     .setProxy(proxy)
@@ -525,10 +528,11 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
                     .setDefaultRequestConfig(config)
                     .build();
             return httpclient;
-        }else{
-            CloseableHttpClient httpclient = HttpClientBuilder.create().build();
-            return httpclient;
         }
+        
+        // default
+        CloseableHttpClient httpclient = HttpClientBuilder.create().build();
+        return httpclient;
     }
     
 }
