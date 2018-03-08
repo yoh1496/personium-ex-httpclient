@@ -11,53 +11,73 @@ Supported methods are "GET" and "POST" only at this point.
 ## Usage (GET)
 
 ````
+  // Always return the same format to the caller
+  var createResponse = function(tempCode, tempBody) {
+    var isString = typeof tempBody == "string";
+    return {
+        status: tempCode,
+        headers: {"Content-Type":"application/json"},
+        body: [isString ? tempBody : JSON.stringify(tempBody)]
+    };
+  }
+  
   var url = "http://www.example.com/";
   var headers = {'Accept': 'text/plain'};
+  var httpClient = new _p.extension.HttpClient();
+  var httpCode, response;
 
   try {
-      var httpclient = new _p.extension.HttpClient();
-      var response = { status: "", headers : {}, body :"" };
       response = httpclient.get(url, headers);
   } catch (e) {
-      return {
-          status: 500,
-          headers: {"Content-Type":"text/html"},
-          body: ["Server Error occurred. " + e]
-      };
+      // System exception
+      return createResponse(500, e);
   }
-  return {
-      status: 200,
-      headers: {"Content-Type":"text/plain"},
-      body: ['{"status":' + response.status + ', "headers" ' + response.headers.toString()
-           + ' "body":' + response.body + '}']
-  };
+  httpCode = parseInt(response.status);
+  // Create API usually returns HTTP code 201
+  if (httpCode !== 200) {
+      // Personium exception
+      return createResponse(httpCode, response.body);
+  }
+
+  // Do something and then return data
+  return createResponse(200, response.body);
 
 ````
 ## Usage (POST)
 
 ````
+  // Always return the same format to the caller
+  var createResponse = function(tempCode, tempBody) {
+    var isString = typeof tempBody == "string";
+    return {
+        status: tempCode,
+        headers: {"Content-Type":"application/json"},
+        body: [isString ? tempBody : JSON.stringify(tempBody)]
+    };
+  }
+
   var url = "http://www.example.com/";
-  var body = "bodyParameter1=XXXXX&bodyParameter2=YYYYY";
   var contentType = "application/x-www-form-urlencoded;";
   var headers = {'Accept': 'text/plain'};
+  var body = "bodyParameter1=XXXXX&bodyParameter2=YYYYY";
+  var httpClient = new _p.extension.HttpClient();
+  var httpCode, response;
 
   try {
-      var httpclient = new _p.extension.HttpClient();
-      var response = { status: "", headers : {}, body :"" };
-      response = httpclient.post(url, body, contentType, headers);
+      response = httpclient.post(url, headers, contentType, body);
   } catch (e) {
-      return {
-          status: 500,
-          headers: {"Content-Type":"text/html"},
-          body: ["Server Error occurred. " + e]
-      };
+      // System exception
+      return createResponse(500, e);
   }
-  return {
-      status: 200,
-      headers: {"Content-Type":"application/json"},
-      body: ['{"status":' + response.status + ', "headers" ' + response.headers.toString()
-           + ' "body":'+ response.body + '}']
-  };
+  httpCode = parseInt(response.status);
+  // Create API usually returns HTTP code 201
+  if (httpCode !== 201) {
+      // Personium exception
+      return createResponse(httpCode, response.body);
+  }
+
+  // Do something and then return data
+  return createResponse(200, response.body);
 
 ````
 
