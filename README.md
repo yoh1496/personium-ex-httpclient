@@ -6,11 +6,11 @@
 
 ## Note
 
-Supported methods are "GET" and "POST" only at this point.
+Supported methods are "GET", "POST", "PUT", "DELETE" only at this point.
 
 ## Usage (GET)
 
-````
+```` Javascript
   // Always return the same format to the caller
   var createResponse = function(tempCode, tempBody) {
     var isString = typeof tempBody == "string";
@@ -43,9 +43,10 @@ Supported methods are "GET" and "POST" only at this point.
   return createResponse(200, response.body);
 
 ````
+
 ## Usage (POST)
 
-````
+```` Javascript
   // Always return the same format to the caller
   var createResponse = function(tempCode, tempBody) {
     var isString = typeof tempBody == "string";
@@ -72,6 +73,81 @@ Supported methods are "GET" and "POST" only at this point.
   httpCode = parseInt(response.status);
   // Create API usually returns HTTP code 201
   if (httpCode !== 201) {
+      // Personium exception
+      return createResponse(httpCode, response.body);
+  }
+
+  // Do something and then return data
+  return createResponse(200, response.body);
+
+````
+
+## Usage (PUT)
+
+```` Javascript
+  // Always return the same format to the caller
+  var createResponse = function(tempCode, tempBody) {
+    var isString = typeof tempBody == "string";
+    return {
+        status: tempCode,
+        headers: {"Content-Type":"application/json"},
+        body: [isString ? tempBody : JSON.stringify(tempBody)]
+    };
+  }
+
+  var url = "http://www.example.com/";
+  var contentType = "application/x-www-form-urlencoded;";
+  var headers = {'Accept': 'text/plain'};
+  var body = "bodyParameter1=XXXXX&bodyParameter2=YYYYY";
+  var httpClient = new _p.extension.HttpClient();
+  var httpCode, response;
+
+  try {
+      response = httpclient.put(url, headers, contentType, body);
+  } catch (e) {
+      // System exception
+      return createResponse(500, e);
+  }
+  httpCode = parseInt(response.status);
+  // Create API usually returns HTTP code 201
+  if (httpCode !== 201) {
+      // Personium exception
+      return createResponse(httpCode, response.body);
+  }
+
+  // Do something and then return data
+  return createResponse(200, response.body);
+
+````
+
+
+## Usage (DELETE)
+
+```` Javascript
+  // Always return the same format to the caller
+  var createResponse = function(tempCode, tempBody) {
+    var isString = typeof tempBody == "string";
+    return {
+        status: tempCode,
+        headers: {"Content-Type":"application/json"},
+        body: [isString ? tempBody : JSON.stringify(tempBody)]
+    };
+  }
+  
+  var url = "http://www.example.com/";
+  var headers = {'Accept': 'text/plain'};
+  var httpClient = new _p.extension.HttpClient();
+  var httpCode, response;
+
+  try {
+      response = httpclient.delete(url, headers);
+  } catch (e) {
+      // System exception
+      return createResponse(500, e);
+  }
+  httpCode = parseInt(response.status);
+  // DELETE request usually returns HTTP code 204
+  if (httpCode !== 204) {
       // Personium exception
       return createResponse(httpCode, response.body);
   }
