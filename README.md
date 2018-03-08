@@ -33,7 +33,7 @@ Supported methods are "GET", "POST", "PUT", "DELETE" only at this point.
       return createResponse(500, e);
   }
   httpCode = parseInt(response.status);
-  // Create API usually returns HTTP code 201
+  // Get API usually returns HTTP code 200
   if (httpCode !== 200) {
       // Personium exception
       return createResponse(httpCode, response.body);
@@ -109,8 +109,8 @@ Supported methods are "GET", "POST", "PUT", "DELETE" only at this point.
       return createResponse(500, e);
   }
   httpCode = parseInt(response.status);
-  // Create API usually returns HTTP code 201
-  if (httpCode !== 201) {
+  // Put API usually returns HTTP code 200
+  if (httpCode !== 200) {
       // Personium exception
       return createResponse(httpCode, response.body);
   }
@@ -146,14 +146,14 @@ Supported methods are "GET", "POST", "PUT", "DELETE" only at this point.
       return createResponse(500, e);
   }
   httpCode = parseInt(response.status);
-  // DELETE request usually returns HTTP code 204
+  // DELETE API usually returns HTTP code 204
   if (httpCode !== 204) {
       // Personium exception
       return createResponse(httpCode, response.body);
   }
 
   // Do something and then return data
-  return createResponse(200, response.body);
+  return createResponse(204, response.body);
 
 ````
 
