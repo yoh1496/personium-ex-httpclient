@@ -111,9 +111,6 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
             // Retrieve the status.
             int status = res.getStatusLine().getStatusCode();
             log.debug("status:" + status);
-            if (status != HttpStatus.SC_OK) {
-                return null;
-            }
 
             // Retrieve the response headers.
             JSONObject res_headers = new JSONObject();
