@@ -4,9 +4,9 @@
 
 [Personium](http://personium.io) Engine Extension to provide HTTP client functionality.
 
-## Note
-
-Supported methods are "GET", "POST", "PUT", "DELETE" only at this point.
+## Note  
+Supported methods are "GET", "POST", "PUT", "DELETE" only at this point.  
+For older version (v1.0.1), only "Get" & "POST" were supported. Please see the [here](OlderVersion.md) for details.  
 
 ## Usage (GET)
 
@@ -27,7 +27,7 @@ Supported methods are "GET", "POST", "PUT", "DELETE" only at this point.
   var httpCode, response;
 
   try {
-      response = httpclient.get(url, headers);
+      response = httpClient.get(url, headers);
   } catch (e) {
       // System exception
       return createResponse(500, e);
@@ -65,7 +65,7 @@ Supported methods are "GET", "POST", "PUT", "DELETE" only at this point.
   var httpCode, response;
 
   try {
-      response = httpclient.post(url, headers, contentType, body);
+      response = httpClient.post(url, headers, contentType, body);
   } catch (e) {
       // System exception
       return createResponse(500, e);
@@ -103,7 +103,7 @@ Supported methods are "GET", "POST", "PUT", "DELETE" only at this point.
   var httpCode, response;
 
   try {
-      response = httpclient.put(url, headers, contentType, body);
+      response = httpClient.put(url, headers, contentType, body);
   } catch (e) {
       // System exception
       return createResponse(500, e);
@@ -140,7 +140,7 @@ Supported methods are "GET", "POST", "PUT", "DELETE" only at this point.
   var httpCode, response;
 
   try {
-      response = httpclient.delete(url, headers);
+      response = httpClient.delete(url, headers);
   } catch (e) {
       // System exception
       return createResponse(500, e);
