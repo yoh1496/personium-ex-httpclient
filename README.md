@@ -120,6 +120,43 @@ For older version (v1.0.1), only "Get" & "POST" were supported. Please see the [
 
 ````
 
+## Usage (PATCH)
+
+```` Javascript
+  // Always return the same format to the caller
+  var createResponse = function(tempCode, tempBody) {
+    var isString = typeof tempBody == "string";
+    return {
+        status: tempCode,
+        headers: {"Content-Type":"application/json"},
+        body: [isString ? tempBody : JSON.stringify(tempBody)]
+    };
+  }
+
+  var url = "http://www.example.com/";
+  var contentType = "application/x-www-form-urlencoded;";
+  var headers = {'Accept': 'text/plain'};
+  var body = "bodyParameter1=XXXXX&bodyParameter2=YYYYY";
+  var httpClient = new _p.extension.HttpClient();
+  var httpCode, response;
+
+  try {
+      response = httpClient.patch(url, headers, contentType, body);
+  } catch (e) {
+      // System exception
+      return createResponse(500, e);
+  }
+  httpCode = parseInt(response.status);
+  // Put API usually returns HTTP code 200
+  if (httpCode !== 200) {
+      // Personium exception
+      return createResponse(httpCode, response.body);
+  }
+
+  // Do something and then return data
+  return createResponse(200, response.body);
+
+````
 
 ## Usage (DELETE)
 
