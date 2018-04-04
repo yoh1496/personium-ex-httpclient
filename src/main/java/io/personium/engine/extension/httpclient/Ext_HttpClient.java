@@ -544,15 +544,15 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
         }
 
         try (CloseableHttpClient httpclient = createHTTPClient()) {
-            HttpPatch put = new HttpPatch(uri);
+            HttpPatch patch = new HttpPatch(uri);
             
             // set contentType
-            put.setHeader("Content-Type", contentType);
+            patch.setHeader("Content-Type", contentType);
 
             // set heades
             if (null != headers) {
                 for (Entry<Object, Object> e : headers.entrySet()){
-                	put.addHeader(e.getKey().toString(), e.getValue().toString());
+                	patch.addHeader(e.getKey().toString(), e.getValue().toString());
                 }
             }
 
@@ -569,11 +569,11 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
 //           	  post.setEntity(meb.build());
             } else {
                 // String
-            	put.setEntity(new ByteArrayEntity(params.getBytes("UTF-8")));
+            	patch.setEntity(new ByteArrayEntity(params.getBytes("UTF-8")));
             }
 
             // execute
-            HttpResponse res = httpclient.execute(put);
+            HttpResponse res = httpclient.execute(patch);
 
             // Retrieve the status.
             int status = res.getStatusLine().getStatusCode();
