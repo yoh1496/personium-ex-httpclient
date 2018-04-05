@@ -559,12 +559,9 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
             // set Stream/Paramaters
             if (respondsAsStream){
                 // InputStream
-            	// 画像ファイルを想定しているが、今後、動画等Streamを含めた対応の仕様を決定する必要がある。
-                // POST受け取り用(テスト)のサーバを用意すること。
 //                MultipartEntityBuilder meb = MultipartEntityBuilder.create();
 //                meb.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
 
-           	    // パラメータ名,画像データ,画像のタイプ,画像ファイル名
 //                meb.addBinaryBody("upfile", (InputStream)pis, ContentType.create(contentType), fileName);
 //           	  post.setEntity(meb.build());
             } else {
