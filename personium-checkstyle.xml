@@ -86,7 +86,9 @@
     <module name="UpperEll"/>
     <module name="FileContentsHolder"/>
   </module>
+<!-- Comment out because package-info is not necessary in particular.
   <module name="JavadocPackage"/>
+-->
   <module name="NewlineAtEndOfFile"/>
   <module name="Translation"/>
   <module name="FileLength">
@@ -104,6 +106,10 @@
   <module name="RegexpSingleline">
     <property name="format" value="　"/>
     <property name="message" value="Invalid character used."/>
+  </module>
+  <module name="RegexpHeader">
+    <property name="headerFile" value="${project_loc}/checkstyle.header"/>
+    <property name="fileExtensions" value="java"/>
   </module>
   <module name="SuppressionFilter">
     <property name="file" value="${project_loc}/checkstyle-suppressions.xml"/>

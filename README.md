@@ -4,9 +4,18 @@
 
 [Personium](http://personium.io) Engine Extension to provide HTTP client functionality.
 
-## Note  
-Supported methods are "GET", "POST", "PUT", "DELETE" only at this point.  
-For older version (v1.0.1), only "Get" & "POST" were supported. Please see the [here](OlderVersion.md) for details.  
+## Note
+Supported methods are "GET", "POST", "PUT", "PATCH", "DELETE" only at this point.
+For older version (v1.0.1), only "Get" & "POST" were supported. Please see the [here](OlderVersion.md) for details.
+
+## Ignore SSL verification error
+It is possible to ignore the SSL verification error and perform HTTP request.
+You can ignore the SSL verification error by setting "IgnoreHostnameVerification" to "true" when instantiating HttpClient.
+```` Javascript
+var ignoreVerification = {"IgnoreHostnameVerification": true};
+var httpClient = new _p.extension.HttpClient(ignoreVerification);
+````
+` Ignoring SSL verification error can be severe security problem. It is necessary to pay attention when using it. `
 
 ## Usage (GET)
 
@@ -20,7 +29,7 @@ For older version (v1.0.1), only "Get" & "POST" were supported. Please see the [
         body: [isString ? tempBody : JSON.stringify(tempBody)]
     };
   }
-  
+
   var url = "http://www.example.com/";
   var headers = {'Accept': 'text/plain'};
   var httpClient = new _p.extension.HttpClient();
@@ -170,7 +179,7 @@ For older version (v1.0.1), only "Get" & "POST" were supported. Please see the [
         body: [isString ? tempBody : JSON.stringify(tempBody)]
     };
   }
-  
+
   var url = "http://www.example.com/";
   var headers = {'Accept': 'text/plain'};
   var httpClient = new _p.extension.HttpClient();
