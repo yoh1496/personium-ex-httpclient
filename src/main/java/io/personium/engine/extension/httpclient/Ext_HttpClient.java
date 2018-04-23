@@ -16,27 +16,36 @@
  */
 package io.personium.engine.extension.httpclient;
 
-import io.personium.engine.extension.support.AbstractExtensionScriptableObject;
-import io.personium.engine.extension.support.ExtensionErrorConstructor;
-import io.personium.engine.extension.support.ExtensionLogger;
-import io.personium.engine.extension.wrapper.PersoniumInputStream;
-
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.security.GeneralSecurityException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.Map.Entry;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
+import org.apache.http.ParseException;
 import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPatch;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.apache.http.util.TextUtils;
 import org.json.simple.JSONObject;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.annotations.JSConstructor;
@@ -44,17 +53,60 @@ import org.mozilla.javascript.annotations.JSFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.personium.engine.extension.support.AbstractExtensionScriptableObject;
+import io.personium.engine.extension.support.ExtensionErrorConstructor;
+import io.personium.engine.extension.support.ExtensionLogger;
+import io.personium.engine.extension.wrapper.PersoniumInputStream;
+
 /**
  * Engine-Extension HttpClient.
  */
 @SuppressWarnings("serial")
-public class Ext_HttpClient extends AbstractExtensionScriptableObject {
+public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECKSTYLE IGNORE - Method name is for extension specification.
 
+    /** Logger. */
     static Logger log = LoggerFactory.getLogger(Ext_HttpClient.class);
+
+    /** Json key:SkipHostnameVerification. */
+    private static final String KEY_SKIP_HOSTNAME_VERIFICATION = "IgnoreHostnameVerification";
+
+    /** Ignore SSL varification flag. */
+    private boolean ignoreHostnameVerification = false;
+
+    /**
+     * Default constructor.
+     */
+    public Ext_HttpClient() {
+    }
+
+    /**
+     * Constructor.
+     * @param parameters Json parameters.<p>
+     * SkipHostnameVerification true:Skip ssl verification.
+     */
+    @JSConstructor
+    public Ext_HttpClient(NativeObject parameters) {
+        ExtensionLogger logger = new ExtensionLogger(this.getClass());
+        setLogger(this.getClass(), logger);
+
+        if (parameters != null && !parameters.isEmpty()) {
+            Object argSkipParam = parameters.get(KEY_SKIP_HOSTNAME_VERIFICATION);
+            if (argSkipParam == null) {
+                String message = "Parameter [IgnoreHostnameVerification] is not set.";
+                this.getLogger().info(message);
+                throw ExtensionErrorConstructor.construct(message);
+            }
+            if (!(argSkipParam instanceof Boolean)) {
+                String message = "Parameter [IgnoreHostnameVerification] is not boolean.";
+                this.getLogger().info(message);
+                throw ExtensionErrorConstructor.construct(message);
+            }
+            ignoreHostnameVerification = (Boolean) argSkipParam;
+        }
+    }
 
     /**
      * Public name to JavaScript.
-     * @return class name
      */
     @Override
     public String getClassName() {
@@ -62,87 +114,33 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
     }
 
     /**
-     * constructor.
-     */
-    @JSConstructor
-    public Ext_HttpClient() {
-        ExtensionLogger logger = new ExtensionLogger(this.getClass());
-        setLogger(this.getClass(), logger);
-    }
-
-    /**
      * get.
-     * @param uri String
+     * @param url String
      * @param headers JSONObject
      * @param respondsAsStream true:stream/false:text
      * @return JSONObject
      */
     @JSFunction
-    public NativeObject get(String uri, NativeObject headers, boolean respondsAsStream) {
-        NativeObject result = null;
+    public NativeObject get(String url, NativeObject headers, boolean respondsAsStream) {
+        // Verification.
+        verifyParamIsEmpty(url, "url");
 
-        if (null == uri || uri.isEmpty()) {
-            String message = "URL parameter is not set.";
-            this.getLogger().info(message);
-            throw ExtensionErrorConstructor.construct(message);
+        HttpGet get = new HttpGet(url);
+        addRequestHeaders(get, headers);
+
+        try (CloseableHttpClient httpclient = createHttpClient()) {
+            // Request
+            HttpResponse res = httpclient.execute(get);
+            // Response
+            return createResponseToJavascript(res, respondsAsStream);
+        } catch (IOException e) {
+            throw ExtensionErrorConstructor.construct(createErrorMessage(e));
         }
-
-        try (CloseableHttpClient httpclient = createHTTPClient()) {
-            HttpGet get = new HttpGet(uri);
-
-            // Set request headers.
-            if (null != headers) {
-                for (Entry<Object, Object> e : headers.entrySet()) {
-                    get.addHeader(e.getKey().toString(), e.getValue().toString());
-                }
-            }
-
-            HttpResponse res = null;
-            res = httpclient.execute(get);
-
-            // Retrieve the status.
-            int status = res.getStatusLine().getStatusCode();
-            log.debug("status:" + status);
-
-            // Retrieve the response headers.
-            JSONObject jsonHeaders = new JSONObject();
-            Header[] resHeaders = res.getAllHeaders();
-            for (Header header : resHeaders) {
-                jsonHeaders.put(header.getName(), header.getValue());
-            }
-
-            // Set NativeObject.
-            result = new NativeObject();
-
-            // Number、JSONObjectでは動作しないことを確認。そのため、Stringで設定する。
-            result.put("status", result, Integer.toString(status));
-            result.put("headers", result, jsonHeaders.toString());
-
-            HttpEntity entity = res.getEntity();
-            if (entity != null) {
-                if (respondsAsStream) {
-                    // InputStream > PersoniumInputStream.
-                    InputStream is = new BufferedHttpEntity(res.getEntity()).getContent();
-                    PersoniumInputStream pis = new PersoniumInputStream((InputStream) is);
-                    result.put("body", result, (PersoniumInputStream) pis);
-                } else {
-                    // String.
-                    result.put("body", result, EntityUtils.toString(entity, "UTF-8"));
-                }
-            }
-
-        } catch (Exception e) {
-            String message = "An error occurred.";
-            this.getLogger().warn(message, e);
-            String errorMessage = String.format("%s Cause: [%s]",
-                    message, e.getClass().getName() + ": " + e.getMessage());
-            throw ExtensionErrorConstructor.construct(errorMessage);
-        }
-        return result;
     }
 
     /**
      * postParam (String).
+     * This method name is old version (v1.0.1 or older).
      * @param uri String
      * @param headers NativeObject
      * @param contentType String
@@ -151,8 +149,25 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
      */
     @JSFunction
     public NativeObject postParam(String uri, NativeObject headers, String contentType, String params) {
-        return postX(uri, headers, contentType, params, null, null);
+        return post(uri, headers, contentType, params, null, null);
     }
+
+//    /**
+//     * postStream (PersoniumInputStream).
+//     * @param uri String
+//     * @param headers NativeObject
+//     * @param contentType String
+//     * @param params String
+//     * @param pis PersoniumInputStream
+//     * @param fileName String
+//     * @return NativeObject
+//     */
+// PostのStreamは、動作が確認できていないためコメント。
+//    @JSFunction
+//    public NativeObject postStream(String uri, NativeObject headers, String contentType,
+//            PersoniumInputStream pis, String fileName) {
+//        return post(uri, headers, contentType, null, pis, fileName);
+//    }
 
     /**
      * post (String).
@@ -164,11 +179,12 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
      */
     @JSFunction
     public NativeObject post(String uri, NativeObject headers, String contentType, String params) {
-        return postX(uri, headers, contentType, params, null, null);
+        return post(uri, headers, contentType, params, null, null);
     }
 
     /**
      * putParam (String).
+     * This method name is old version (v1.0.1 or older).
      * @param uri String
      * @param headers NativeObject
      * @param contentType String
@@ -177,7 +193,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
      */
     @JSFunction
     public NativeObject putParam(String uri, NativeObject headers, String contentType, String params) {
-        return putX(uri, headers, contentType, params, null, null);
+        return put(uri, headers, contentType, params, null, null);
     }
 
     /**
@@ -190,414 +206,285 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject {
      */
     @JSFunction
     public NativeObject put(String uri, NativeObject headers, String contentType, String params) {
-        return putX(uri, headers, contentType, params, null, null);
+        return put(uri, headers, contentType, params, null, null);
     }
 
     /**
      * patch (String).
-     * @param uri String
+     * @param url String
      * @param headers NativeObject
      * @param contentType String
      * @param params String
      * @return NativeObject
      */
     @JSFunction
-    public NativeObject patch(String uri, NativeObject headers, String contentType, String params) {
-        return patchX(uri, headers, contentType, params, null, null);
+    public NativeObject patch(String url, NativeObject headers, String contentType, String params) {
+        boolean respondsAsStream = false;
+
+        // Verification.
+        verifyParamIsEmpty(url, "url");
+        verifyParamIsEmpty(contentType, "contentType");
+        verifyParamIsEmpty(params, "body");
+
+        HttpPatch patch = new HttpPatch(url);
+        // set contentType
+        patch.addHeader("Content-Type", contentType);
+        // set headers
+        addRequestHeaders(patch, headers);
+        // set body
+        addRequestBody(patch, params);
+
+        try (CloseableHttpClient httpclient = createHttpClient()) {
+            // Request
+            HttpResponse res = httpclient.execute(patch);
+            // Response
+            return createResponseToJavascript(res, respondsAsStream);
+        } catch (IOException e) {
+            throw ExtensionErrorConstructor.construct(createErrorMessage(e));
+        }
     }
 
     /**
      * delete.
-     * @param uri String
+     * @param url String
      * @param headers JSONObject
      * @param respondsAsStream true:stream/false:text
      * @return JSONObject
      */
     @JSFunction
-    public NativeObject delete(String uri, NativeObject headers, boolean respondsAsStream) {
-        NativeObject result = null;
-        if (null == uri || uri.isEmpty()) {
-            String message = "URL parameter is not set.";
+    public NativeObject delete(String url, NativeObject headers, boolean respondsAsStream) {
+        // Verification.
+        verifyParamIsEmpty(url, "url");
+
+        HttpDelete delete = new HttpDelete(url);
+        addRequestHeaders(delete, headers);
+
+        try (CloseableHttpClient httpclient = createHttpClient()) {
+            // Request
+            HttpResponse res = httpclient.execute(delete);
+            // Response
+            return createResponseToJavascript(res, respondsAsStream);
+        } catch (IOException e) {
+            throw ExtensionErrorConstructor.construct(createErrorMessage(e));
+        }
+    }
+
+    /**
+     * Post.
+     * @param url String
+     * @param headers NativeObject
+     * @param contentType String
+     * @param params String
+     * @param is PersoniumInputStream
+     * @param fileName String
+     * @return NativeObject
+     */
+    private NativeObject post(String url, NativeObject headers, String contentType,
+                              String params, PersoniumInputStream pis, String fileName) {
+        boolean respondsAsStream = false;
+
+        // Verification.
+        verifyParamIsEmpty(url, "url");
+        verifyParamIsEmpty(contentType, "contentType");
+        verifyParamIsEmpty(params, "body");
+
+        HttpPost post = new HttpPost(url);
+        // set contentType
+        post.addHeader("Content-Type", contentType);
+        // set headers
+        addRequestHeaders(post, headers);
+        // set body
+        addRequestBody(post, params);
+
+        try (CloseableHttpClient httpclient = createHttpClient()) {
+            // Request
+            HttpResponse res = httpclient.execute(post);
+            // Response
+            return createResponseToJavascript(res, respondsAsStream);
+        } catch (IOException e) {
+            throw ExtensionErrorConstructor.construct(createErrorMessage(e));
+        }
+    }
+
+    /**
+     * put.
+     * @param url String
+     * @param headers NativeObject
+     * @param contentType String
+     * @param params String
+     * @param is PersoniumInputStream
+     * @param fileName String
+     * @return NativeObject
+     */
+    private NativeObject put(String url, NativeObject headers, String contentType,
+                              String params, PersoniumInputStream pis, String fileName) {
+        boolean respondsAsStream = false;
+
+        // Verification.
+        verifyParamIsEmpty(url, "url");
+        verifyParamIsEmpty(contentType, "contentType");
+        verifyParamIsEmpty(params, "body");
+
+        HttpPut put = new HttpPut(url);
+        // set contentType
+        put.addHeader("Content-Type", contentType);
+        // set headers
+        addRequestHeaders(put, headers);
+        // set body
+        addRequestBody(put, params);
+
+        try (CloseableHttpClient httpclient = createHttpClient()) {
+            // Request
+            HttpResponse res = httpclient.execute(put);
+            // Response
+            return createResponseToJavascript(res, respondsAsStream);
+        } catch (IOException e) {
+            throw ExtensionErrorConstructor.construct(createErrorMessage(e));
+        }
+    }
+
+    /**
+     * Verify that the parameter is empty.
+     * If the parameter is empty throw exception.
+     * @param param target parameter
+     * @param paramName parameter name
+     */
+    private void verifyParamIsEmpty(String param, String paramName) {
+        if (TextUtils.isEmpty(param)) {
+            String message = String.format("Parameter [%s] is not set.", paramName);
             this.getLogger().info(message);
             throw ExtensionErrorConstructor.construct(message);
         }
+    }
 
-        try (CloseableHttpClient httpclient = createHTTPClient()) {
-            HttpDelete delete = new HttpDelete(uri);
-
-            // Set request headers.
-            if (null != headers) {
-                for (Entry<Object, Object> e : headers.entrySet()) {
-                    delete.addHeader(e.getKey().toString(), e.getValue().toString());
-                }
+    /**
+     * Add http request headers.
+     * @param request http request method object
+     * @param headers http headers
+     * @return Request with header added
+     */
+    private HttpRequestBase addRequestHeaders(HttpRequestBase request, NativeObject headers) {
+        // Set request headers.
+        if (headers != null) {
+            for (Entry<Object, Object> e : headers.entrySet()) {
+                request.addHeader(e.getKey().toString(), e.getValue().toString());
             }
+        }
+        return request;
+    }
 
-            HttpResponse res = null;
-            res = httpclient.execute(delete);
+    /**
+     * Add http request body.
+     * @param request http request method object
+     * @param bodyString http body string
+     * @return Request with body added
+     */
+    private HttpRequestBase addRequestBody(HttpEntityEnclosingRequestBase request, String bodyString) {
+        // set body
+        try {
+            request.setEntity(new ByteArrayEntity(bodyString.getBytes("UTF-8")));
+        } catch (UnsupportedEncodingException e) {
+            throw ExtensionErrorConstructor.construct(createErrorMessage(e));
+        }
+        return request;
+    }
 
-            // Retrieve the status.
-            int status = res.getStatusLine().getStatusCode();
-            log.debug("delete status:" + status);
+    /**
+     * Create response from HttpResponse to javascript.
+     * @param res http response
+     * @param respondsAsStream Flag as to whether body is returned as stream
+     * @return response to javascript
+     */
+    @SuppressWarnings("unchecked")
+    private NativeObject createResponseToJavascript(HttpResponse res, boolean respondsAsStream) {
+        // Retrieve the status.
+        int resStatus = res.getStatusLine().getStatusCode();
+        log.debug("status:" + resStatus);
 
-            // Retrieve the response headers.
-            JSONObject jsonHeaders = new JSONObject();
-            Header[] resHeaders = res.getAllHeaders();
-            for (Header header : resHeaders) {
-                jsonHeaders.put(header.getName(), header.getValue());
-            }
+        // Retrieve the response headers.
+        JSONObject resHeaders = new JSONObject();
+        for (Header header : res.getAllHeaders()) {
+            resHeaders.put(header.getName(), header.getValue());
+        }
 
-            // Set NativeObject.
-            result = new NativeObject();
+        // Set NativeObject.
+        NativeObject result = new NativeObject();
+        result.put("status", result, Integer.toString(resStatus));
+        result.put("headers", result, resHeaders.toString());
 
-            result.put("status", result, Integer.toString(status));
-            result.put("headers", result, jsonHeaders.toString());
-
-            HttpEntity entity = res.getEntity();
-            if (entity != null) {
-                if (respondsAsStream) {
+        HttpEntity entity = res.getEntity();
+        if (entity != null) {
+            if (respondsAsStream) {
+                try {
                     // InputStream > PersoniumInputStream.
                     InputStream is = new BufferedHttpEntity(res.getEntity()).getContent();
                     PersoniumInputStream pis = new PersoniumInputStream((InputStream) is);
                     result.put("body", result, (PersoniumInputStream) pis);
-                } else {
+                } catch (IOException e) {
+                    throw ExtensionErrorConstructor.construct(createErrorMessage(e));
+                }
+            } else {
+                try {
                     // String.
                     result.put("body", result, EntityUtils.toString(entity, "UTF-8"));
+                } catch (ParseException | IOException e) {
+                    throw ExtensionErrorConstructor.construct(createErrorMessage(e));
                 }
             }
-        } catch (Exception e) {
-            String message = "An error occurred.";
-            this.getLogger().warn(message, e);
-            String errorMessage = String.format("%s Cause: [%s]",
-                    message, e.getClass().getName() + ": " + e.getMessage());
-            throw ExtensionErrorConstructor.construct(errorMessage);
         }
         return result;
     }
 
     /**
-     * postStream (PersoniumInputStream).
-     * @param uri String
-     * @param headers NativeObject
-     * @param contentType String
-     * @param params String
-     * @param pis PersoniumInputStream
-     * @param fileName String
-     * @return NativeObject
+     * Create and return instance of HttpClient.
+     * @return HttpClient
      */
-// PostのStreamは、動作が確認できていないためコメント。
-//    @JSFunction
-//    public NativeObject postStream(String uri, NativeObject headers, String contentType,
-//            PersoniumInputStream pis, String fileName) {
-//        return post(uri, headers, contentType, null, pis, fileName);
-//    }
+    private CloseableHttpClient createHttpClient() {
+        HttpClientBuilder builder = HttpClients.custom();
 
-    /**
-     * PostX.
-     * @param uri String
-     * @param headers NativeObject
-     * @param contentType String
-     * @param params String
-     * @param is PersoniumInputStream
-     * @param fileName String
-     * @return NativeObject
-     */
-    private NativeObject postX(String uri, NativeObject headers, String contentType,
-                              String params, PersoniumInputStream pis, String fileName) {
-        NativeObject result = null;
-
-        boolean respondsAsStream = false;
-//        if (pis != null){
-//            respondsAsStream = true;
-//        }
-
-        if (null == uri || uri.isEmpty()) {
-            String message = "URL parameter is not set.";
-            this.getLogger().info(message);
-            throw ExtensionErrorConstructor.construct(message);
-        }
-        if (null == contentType || contentType.isEmpty()) {
-            String message = "contentType parameter is not set.";
-            this.getLogger().info(message);
-            throw ExtensionErrorConstructor.construct(message);
-        }
-        if (!respondsAsStream) {
-            if (null == params || params.isEmpty()) {
-                String message = "body parameter is not set.";
-                this.getLogger().info(message);
-                throw ExtensionErrorConstructor.construct(message);
+        // SSL verify settings.
+        if (ignoreHostnameVerification) {
+            try {
+                builder.setSSLContext(createSkipSSLVerifyContext());
+            } catch (GeneralSecurityException e) {
+                throw ExtensionErrorConstructor.construct(createErrorMessage(e));
             }
         }
 
-        try (CloseableHttpClient httpclient = createHTTPClient()) {
-            HttpPost post = new HttpPost(uri);
+        // Proxy settings.
+        builder.useSystemProperties();
 
-            // set contentType
-            post.setHeader("Content-Type", contentType);
-
-            // set heades
-            if (null != headers) {
-                for (Entry<Object, Object> e : headers.entrySet()) {
-                    post.addHeader(e.getKey().toString(), e.getValue().toString());
-                }
-            }
-
-            // set Stream/Paramaters
-            if (respondsAsStream) {
-                // InputStream
-                // 画像ファイルを想定しているが、今後、動画等Streamを含めた対応の仕様を決定する必要がある。
-                // POST受け取り用(テスト)のサーバを用意すること。
-//                MultipartEntityBuilder meb = MultipartEntityBuilder.create();
-//                meb.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
-
-                // パラメータ名,画像データ,画像のタイプ,画像ファイル名
-//                meb.addBinaryBody("upfile", (InputStream)pis, ContentType.create(contentType), fileName);
-//                post.setEntity(meb.build());
-            } else {
-                // String
-                post.setEntity(new ByteArrayEntity(params.getBytes("UTF-8")));
-            }
-
-            // execute
-            HttpResponse res = httpclient.execute(post);
-
-            // Retrieve the status.
-            int status = res.getStatusLine().getStatusCode();
-
-            // response headers
-            JSONObject jsonHeaders = new JSONObject();
-            Header[] resHeaders = res.getAllHeaders();
-            for (Header header : resHeaders) {
-                jsonHeaders.put(header.getName(), header.getValue());
-            }
-
-            // get entity
-            String resBody = "";
-            HttpEntity resEntity = res.getEntity();
-            if (resEntity != null) {
-                resBody = EntityUtils.toString(resEntity, "UTF-8");
-            }
-
-            // set NativeObject
-            result = new NativeObject();
-            result.put("status", result, (String) Integer.toString(status));
-            result.put("headers", result, (String) jsonHeaders.toString());
-            result.put("body", result, resBody);
-
-        } catch (Exception e) {
-            String message = "An error occurred.";
-            this.getLogger().warn(message, e);
-            String errorMessage = String.format("%s Cause: [%s]",
-                    message, e.getClass().getName() + ": " + e.getMessage());
-            throw ExtensionErrorConstructor.construct(errorMessage);
-        }
-        return result;
+        return builder.build();
     }
 
     /**
-     * putX.
-     * @param uri String
-     * @param headers NativeObject
-     * @param contentType String
-     * @param params String
-     * @param is PersoniumInputStream
-     * @param fileName String
-     * @return NativeObject
+     * Create and return the SSLContext that skips ssl verification.
+     * @return SSL context.
+     * @throws GeneralSecurityException security error
      */
-    private NativeObject putX(String uri, NativeObject headers, String contentType,
-                              String params, PersoniumInputStream pis, String fileName) {
-        NativeObject result = null;
-
-        boolean respondsAsStream = false;
-//        if (pis != null){
-//            respondsAsStream = true;
-//        }
-
-        if (null == uri || uri.isEmpty()) {
-            String message = "URL parameter is not set.";
-            this.getLogger().info(message);
-            throw ExtensionErrorConstructor.construct(message);
-        }
-        if (null == contentType || contentType.isEmpty()) {
-            String message = "contentType parameter is not set.";
-            this.getLogger().info(message);
-            throw ExtensionErrorConstructor.construct(message);
-        }
-        if (!respondsAsStream) {
-            if (null == params || params.isEmpty()) {
-                String message = "body parameter is not set.";
-                this.getLogger().info(message);
-                throw ExtensionErrorConstructor.construct(message);
+    private SSLContext createSkipSSLVerifyContext() throws GeneralSecurityException {
+        SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+        TrustManager tm = new X509TrustManager() {
+            public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
             }
-        }
-
-        try (CloseableHttpClient httpclient = createHTTPClient()) {
-            HttpPut put = new HttpPut(uri);
-
-            // set contentType
-            put.setHeader("Content-Type", contentType);
-
-            // set heades
-            if (null != headers) {
-                for (Entry<Object, Object> e : headers.entrySet()) {
-                    put.addHeader(e.getKey().toString(), e.getValue().toString());
-                }
+            public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
             }
-
-            // set Stream/Paramaters
-            if (respondsAsStream) {
-                // InputStream
-                // 画像ファイルを想定しているが、今後、動画等Streamを含めた対応の仕様を決定する必要がある。
-                // POST受け取り用(テスト)のサーバを用意すること。
-//                MultipartEntityBuilder meb = MultipartEntityBuilder.create();
-//                meb.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
-
-                // パラメータ名,画像データ,画像のタイプ,画像ファイル名
-//                meb.addBinaryBody("upfile", (InputStream)pis, ContentType.create(contentType), fileName);
-//                post.setEntity(meb.build());
-            } else {
-                // String
-                put.setEntity(new ByteArrayEntity(params.getBytes("UTF-8")));
+            public X509Certificate[] getAcceptedIssuers() {
+                return null;
             }
-
-            // execute
-            HttpResponse res = httpclient.execute(put);
-
-            // Retrieve the status.
-            int status = res.getStatusLine().getStatusCode();
-
-            // response headers
-            JSONObject jsonHeaders = new JSONObject();
-            Header[] resHeaders = res.getAllHeaders();
-            for (Header header : resHeaders) {
-                jsonHeaders.put(header.getName(), header.getValue());
-            }
-
-            // get entity
-            String resBody = "";
-            HttpEntity resEntity = res.getEntity();
-            if (resEntity != null) {
-                resBody = EntityUtils.toString(resEntity, "UTF-8");
-            }
-
-            // set NativeObject
-            result = new NativeObject();
-            result.put("status", result, (String) Integer.toString(status));
-            result.put("headers", result, (String) jsonHeaders.toString());
-            result.put("body", result, resBody);
-
-        } catch (Exception e) {
-            String message = "An error occurred.";
-            this.getLogger().warn(message, e);
-            String errorMessage = String.format("%s Cause: [%s]",
-                    message, e.getClass().getName() + ": " + e.getMessage());
-            throw ExtensionErrorConstructor.construct(errorMessage);
-        }
-        return result;
+        };
+        sslContext.init(null, new TrustManager[] {tm}, null);
+        return sslContext;
     }
 
     /**
-     * patchX.
-     * @param uri String
-     * @param headers NativeObject
-     * @param contentType String
-     * @param params String
-     * @param is PersoniumInputStream
-     * @param fileName String
-     * @return NativeObject
+     * Create and return error message.
+     * @param e error
+     * @return Error message
      */
-    private NativeObject patchX(String uri, NativeObject headers, String contentType,
-                              String params, PersoniumInputStream pis, String fileName) {
-        NativeObject result = null;
-
-        boolean respondsAsStream = false;
-//        if (pis != null){
-//            respondsAsStream = true;
-//        }
-
-        if (null == uri || uri.isEmpty()) {
-            String message = "URL parameter is not set.";
-            this.getLogger().info(message);
-            throw ExtensionErrorConstructor.construct(message);
-        }
-        if (null == contentType || contentType.isEmpty()) {
-            String message = "contentType parameter is not set.";
-            this.getLogger().info(message);
-            throw ExtensionErrorConstructor.construct(message);
-        }
-        if (!respondsAsStream) {
-            if (null == params || params.isEmpty()) {
-                String message = "body parameter is not set.";
-                this.getLogger().info(message);
-                throw ExtensionErrorConstructor.construct(message);
-            }
-        }
-
-        try (CloseableHttpClient httpclient = createHTTPClient()) {
-            HttpPatch patch = new HttpPatch(uri);
-
-            // set contentType
-            patch.setHeader("Content-Type", contentType);
-
-            // set heades
-            if (null != headers) {
-                for (Entry<Object, Object> e : headers.entrySet()) {
-                    patch.addHeader(e.getKey().toString(), e.getValue().toString());
-                }
-            }
-
-            // set Stream/Paramaters
-            if (respondsAsStream) {
-                // InputStream
-//                MultipartEntityBuilder meb = MultipartEntityBuilder.create();
-//                meb.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
-
-//                meb.addBinaryBody("upfile", (InputStream)pis, ContentType.create(contentType), fileName);
-//                post.setEntity(meb.build());
-            } else {
-                // String
-                patch.setEntity(new ByteArrayEntity(params.getBytes("UTF-8")));
-            }
-
-            // execute
-            HttpResponse res = httpclient.execute(patch);
-
-            // Retrieve the status.
-            int status = res.getStatusLine().getStatusCode();
-
-            // response headers
-            JSONObject res_headers = new JSONObject();
-            Header[] resHeaders = res.getAllHeaders();
-            for (Header header : resHeaders) {
-                res_headers.put(header.getName(), header.getValue());
-            }
-
-            // get entity
-            String res_body = "";
-            HttpEntity resEntity = res.getEntity();
-            if (resEntity != null) {
-                res_body = EntityUtils.toString(resEntity, "UTF-8");
-            }
-
-            // set NativeObject
-            result = new NativeObject();
-            result.put("status", result, (String) Integer.toString(status));
-            result.put("headers", result, (String) res_headers.toString());
-            result.put("body", result, res_body);
-
-        } catch (Exception e) {
-            String message = "An error occurred.";
-            this.getLogger().warn(message, e);
-            String errorMessage = String.format("%s Cause: [%s]",
-                    message, e.getClass().getName() + ": " + e.getMessage());
-            throw ExtensionErrorConstructor.construct(errorMessage);
-        }
-        return result;
-    }
-
-
-    private CloseableHttpClient createHTTPClient() {
-        return HttpClientBuilder.create()
-                .useSystemProperties()
-                .build();
+    private String createErrorMessage(Exception e) {
+        String message = "An error occurred.";
+        this.getLogger().warn(message, e);
+        return String.format("%s Cause: [%s: %s]", message, e.getClass().getName(), e.getMessage());
     }
 }
