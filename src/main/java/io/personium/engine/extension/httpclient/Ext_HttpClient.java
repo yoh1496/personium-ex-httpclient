@@ -1,6 +1,6 @@
 /**
  * personium.io
- * Copyright 2017 FUJITSU LIMITED
+ * Copyright 2017-2018 FUJITSU LIMITED
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,13 +30,8 @@ import javax.net.ssl.X509TrustManager;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
@@ -46,7 +41,6 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
@@ -441,73 +435,56 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
         return result;
     }
 
-   /**
-    * Create and return instance of HttpClient.
-    * @return HttpClient
-    */
-   private CloseableHttpClient createHttpClient() {
-       String host = java.lang.System.getProperty("http.proxyHost");
-       Integer port =  java.lang.Integer.getInteger("http.proxyPort");
-       String id =  java.lang.System.getProperty("http.proxyUser");
-       String pass =  java.lang.System.getProperty("http.proxyPassword");
+    /**
+     * Create and return instance of HttpClient.
+     * @return HttpClient
+     */
+    private CloseableHttpClient createHttpClient() {
+        HttpClientBuilder builder = HttpClients.custom();
 
-       HttpClientBuilder builder = HttpClients.custom();
+        // SSL verify settings.
+        if (ignoreHostnameVerification) {
+            try {
+                builder.setSSLContext(createSkipSSLVerifyContext());
+            } catch (GeneralSecurityException e) {
+                throw ExtensionErrorConstructor.construct(createErrorMessage(e));
+            }
+        }
 
-       // SSL verify settings.
-       if (ignoreHostnameVerification) {
-           try {
-               builder.setSSLContext(createSkipSSLVerifyContext());
-           } catch (GeneralSecurityException e) {
-               throw ExtensionErrorConstructor.construct(createErrorMessage(e));
-           }
-       }
+        // Proxy settings.
+        builder.useSystemProperties();
 
-       // Proxy settings.
-       if (!TextUtils.isEmpty(host) && port != null) {
-           // use proxy
-           HttpHost proxy = new HttpHost(host, port);
-           RequestConfig config = RequestConfig.custom().setProxy(proxy).build();
-           builder.setDefaultRequestConfig(config);
+        return builder.build();
+    }
 
-           if (!TextUtils.isEmpty(id) && !TextUtils.isEmpty(pass)) {
-               // use proxy with authentication
-               CredentialsProvider credsProvider = new BasicCredentialsProvider();
-               credsProvider.setCredentials(new AuthScope(proxy), new UsernamePasswordCredentials(id, pass));
-               builder.setDefaultCredentialsProvider(credsProvider);
-           }
-       }
+    /**
+     * Create and return the SSLContext that skips ssl verification.
+     * @return SSL context.
+     * @throws GeneralSecurityException security error
+     */
+    private SSLContext createSkipSSLVerifyContext() throws GeneralSecurityException {
+        SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+        TrustManager tm = new X509TrustManager() {
+            public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+            }
+            public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+            }
+            public X509Certificate[] getAcceptedIssuers() {
+                return null;
+            }
+        };
+        sslContext.init(null, new TrustManager[] {tm}, null);
+        return sslContext;
+    }
 
-       return builder.build();
-   }
-
-   /**
-    * Create and return the SSLContext that skips ssl verification.
-    * @return SSL context.
-    * @throws GeneralSecurityException security error
-    */
-   private SSLContext createSkipSSLVerifyContext() throws GeneralSecurityException {
-       SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
-       TrustManager tm = new X509TrustManager() {
-           public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-           }
-           public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-           }
-           public X509Certificate[] getAcceptedIssuers() {
-               return null;
-           }
-       };
-       sslContext.init(null, new TrustManager[] {tm}, null);
-       return sslContext;
-   }
-
-   /**
-    * Create and return error message.
-    * @param e error
-    * @return Error message
-    */
-   private String createErrorMessage(Exception e) {
-       String message = "An error occurred.";
-       this.getLogger().warn(message, e);
-       return String.format("%s Cause: [%s: %s]", message, e.getClass().getName(), e.getMessage());
-   }
+    /**
+     * Create and return error message.
+     * @param e error
+     * @return Error message
+     */
+    private String createErrorMessage(Exception e) {
+        String message = "An error occurred.";
+        this.getLogger().warn(message, e);
+        return String.format("%s Cause: [%s: %s]", message, e.getClass().getName(), e.getMessage());
+    }
 }
