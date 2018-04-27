@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.personium</groupId>
 	<artifactId>personium-ex-httpclient</artifactId>
-	<version>1.1.2-SNAPSHOT</version>
+	<version>1.1.2</version>
 	<packaging>jar</packaging>
 	<licenses>
 		<license>
@@ -33,7 +33,7 @@
 		<dependency>
 			<groupId>io.personium</groupId>
 			<artifactId>personium-ex-base</artifactId>
-			<version>1.4.4-SNAPSHOT</version>
+			<version>1.4.4</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
