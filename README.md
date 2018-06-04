@@ -1,11 +1,13 @@
 # personium-ex-httpclient
 
 ## About
-
 [Personium](http://personium.io) Engine Extension to provide HTTP client functionality.
 
+## Installation
+Please see [Setup Engine Extensions](https://personium.io/docs/en/server-operator/setup_engine_extensions.html).
+
 ## Note
-Supported methods are "GET", "POST", "PUT", "PATCH", "DELETE" only at this point.
+Supported methods are "GET", "POST", "PUT", "PATCH", "DELETE" only at this point.  
 For older version (v1.0.1), only "Get" & "POST" were supported. Please see the [here](OlderVersion.md) for details.
 
 ## Ignore SSL verification error
