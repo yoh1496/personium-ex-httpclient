@@ -4,24 +4,7 @@
 [Personium](http://personium.io) Engine Extension to provide HTTP client functionality.
 
 ## Installation
-### Make jar file
-Maven is required for build.  
-Refer to http://maven.apache.org/download.cgi#Installation and install maven.  
-
-Check out the repository and do the following:  
-```` sh
-cd personium-ex-httpclient
-mvn clean package -DskipTests
-````
-Jar file is created under "personium-ex-httpclient/target".  
-
-### Install
-Deploy the jar file to your PersoniumUnit and restart it.  
-The default deploy path is "/personium/personium-engine/extensions".  
-```` sh
-cp personium-ex-httpclient/target/personium-ex-httpclient.jar /personium/personium-engine/extensions
-service restart tomcat
-````
+Please see [Setup Engine Extensions](https://personium.io/docs/en/server-operator/setup_engine_extensions.html).
 
 ## Note
 Supported methods are "GET", "POST", "PUT", "PATCH", "DELETE" only at this point.  
