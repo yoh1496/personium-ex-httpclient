@@ -22,6 +22,7 @@ import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Iterator;
 import java.util.Map.Entry;
 
 import javax.net.ssl.SSLContext;
@@ -47,6 +48,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.apache.http.util.TextUtils;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
@@ -67,11 +69,15 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
     /** Logger. */
     static Logger log = LoggerFactory.getLogger(Ext_HttpClient.class);
 
-    /** Json key:SkipHostnameVerification. */
+    /** Json keys. */
     private static final String KEY_SKIP_HOSTNAME_VERIFICATION = "IgnoreHostnameVerification";
+    private static final String KEY_DEFAULT_HEADERS = "DefaultHeaders";
 
     /** Ignore SSL varification flag. */
     private boolean ignoreHostnameVerification = false;
+
+    /** Default headers */
+    private JSONObject defaultHeaders = null;
 
     /**
      * Default constructor.
@@ -90,18 +96,36 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
         setLogger(this.getClass(), logger);
 
         if (parameters != null && !parameters.isEmpty()) {
-            Object argSkipParam = parameters.get(KEY_SKIP_HOSTNAME_VERIFICATION);
-            if (argSkipParam == null) {
-                String message = "Parameter [IgnoreHostnameVerification] is not set.";
-                this.getLogger().info(message);
-                throw ExtensionErrorConstructor.construct(message);
-            }
-            if (!(argSkipParam instanceof Boolean)) {
-                String message = "Parameter [IgnoreHostnameVerification] is not boolean.";
-                this.getLogger().info(message);
-                throw ExtensionErrorConstructor.construct(message);
-            }
-            ignoreHostnameVerification = (Boolean) argSkipParam;
+            setIgnoreHostnameVerification(parameters);
+            setDefaultHeaders(parameters);
+        }
+    }
+
+    private void setIgnoreHostnameVerification(NativeObject parameters) {
+        Object argParam = parameters.get(KEY_SKIP_HOSTNAME_VERIFICATION);
+        if (argParam == null) return;
+        if (!(argParam instanceof Boolean)) {
+            String message = String.format("Parameter [%s] is not Boolean.", KEY_SKIP_HOSTNAME_VERIFICATION);
+            this.getLogger().info(message);
+            throw ExtensionErrorConstructor.construct(message);
+        }
+        ignoreHostnameVerification = (Boolean) argParam;
+    }
+
+    private void setDefaultHeaders(NativeObject parameters) {
+        Object argParam = parameters.get(KEY_DEFAULT_HEADERS);
+        if (argParam == null) return;
+        if (!(argParam instanceof String)) {
+            String message = String.format("Parameter [%s] is not String.", KEY_DEFAULT_HEADERS);
+            this.getLogger().info(message);
+            throw ExtensionErrorConstructor.construct(message);
+        }
+        try {
+            defaultHeaders = (JSONObject) (new JSONParser()).parse((String) argParam);
+        } catch (org.json.simple.parser.ParseException e) {
+            String message = String.format("Parameter [%s] is not JSON: %s.", KEY_DEFAULT_HEADERS, e.getMessage());
+            this.getLogger().info(message);
+            throw ExtensionErrorConstructor.construct(message);
         }
     }
 
@@ -230,7 +254,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
         // set contentType
         patch.addHeader("Content-Type", contentType);
         // set headers
-        addRequestHeaders(patch, headers);
+        addRequestHeaders(patch, headers, contentType);
         // set body
         addRequestBody(patch, params);
 
@@ -292,7 +316,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
         // set contentType
         post.addHeader("Content-Type", contentType);
         // set headers
-        addRequestHeaders(post, headers);
+        addRequestHeaders(post, headers, contentType);
         // set body
         addRequestBody(post, params);
 
@@ -329,7 +353,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
         // set contentType
         put.addHeader("Content-Type", contentType);
         // set headers
-        addRequestHeaders(put, headers);
+        addRequestHeaders(put, headers, contentType);
         // set body
         addRequestBody(put, params);
 
@@ -364,10 +388,38 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
      * @return Request with header added
      */
     private HttpRequestBase addRequestHeaders(HttpRequestBase request, NativeObject headers) {
+    	return addRequestHeaders(request, headers, null);
+    }
+
+    /**
+     * Add http request headers.
+     * @param request http request method object
+     * @param headers http headers
+     * @param contentType
+     * @return Request with header added
+     */
+    private HttpRequestBase addRequestHeaders(HttpRequestBase request, NativeObject headers, String contentType) {
+        // Set default headers.
+        if (defaultHeaders != null) {
+            for(@SuppressWarnings("rawtypes") Iterator iterator = defaultHeaders.keySet().iterator(); iterator.hasNext();) {
+                String key = (String) iterator.next();
+                if (key.equals("Content-Type") && contentType != null) {
+                	continue;
+                }
+                if (headers.get(key) == null) {
+                    headers.put(key, headers, (String) defaultHeaders.get(key));
+                }
+            }
+        }
         // Set request headers.
         if (headers != null) {
             for (Entry<Object, Object> e : headers.entrySet()) {
                 request.addHeader(e.getKey().toString(), e.getValue().toString());
+            }
+        }
+        if (log.isDebugEnabled()) {
+            for (Header header: request.getAllHeaders()) {
+            	log.debug("{}: {}",header.getName(), header.getValue());
             }
         }
         return request;
