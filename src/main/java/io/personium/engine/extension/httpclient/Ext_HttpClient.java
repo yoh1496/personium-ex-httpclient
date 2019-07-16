@@ -67,7 +67,7 @@ import io.personium.engine.extension.wrapper.PersoniumInputStream;
 public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECKSTYLE IGNORE - Method name is for extension specification.
 
     /** Logger. */
-    static Logger log = LoggerFactory.getLogger(Ext_HttpClient.class);
+    private static final Logger log = LoggerFactory.getLogger(Ext_HttpClient.class);
 
     /** Json keys. */
     private static final String KEY_SKIP_HOSTNAME_VERIFICATION = "IgnoreHostnameVerification";
@@ -456,7 +456,9 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
     private NativeObject createResponseToJavascript(HttpResponse res, boolean respondsAsStream) {
         // Retrieve the status.
         int resStatus = res.getStatusLine().getStatusCode();
-        log.debug("status:" + resStatus);
+        if (log.isDebugEnabled()) {
+            log.debug("status:" + resStatus);
+        }
 
         // Retrieve the response headers.
         JSONObject resHeaders = new JSONObject();
