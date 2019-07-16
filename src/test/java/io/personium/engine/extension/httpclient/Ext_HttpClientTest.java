@@ -130,9 +130,9 @@ public class Ext_HttpClientTest {
          * String uri, NativeObject headers
          */
         NativeObject result = ext_httpClient.get(MOCK_SERVER_URL + PATH_HTTP_GET_TEXT, req_headers, false);
-        String status = (String)result.get("status");
-        String res_headers_str = (String)result.get("headers");
-        String res_body = (String)result.get("body");
+        String status = (String) result.get("status");
+        String res_headers_str = (String) result.get("headers");
+        String res_body = (String) result.get("body");
 
         JSONObject res_headers = (JSONObject) (new JSONParser()).parse(res_headers_str);
 
@@ -171,9 +171,9 @@ public class Ext_HttpClientTest {
          * String uri, NativeObject headers
          */
         NativeObject result = ext_httpClient.get(MOCK_SERVER_URL + PATH_HTTP_GET_TEXT, req_headers, false);
-        String status = (String)result.get("status");
-        String res_headers_str = (String)result.get("headers");
-        String res_body = (String)result.get("body");
+        String status = (String) result.get("status");
+        String res_headers_str = (String) result.get("headers");
+        String res_body = (String) result.get("body");
 
         JSONObject res_headers = (JSONObject) (new JSONParser()).parse(res_headers_str);
 
@@ -214,9 +214,9 @@ public class Ext_HttpClientTest {
          * String uri, NativeObject headers
          */
         NativeObject result = ext_httpClient.get(MOCK_SERVER_URL + PATH_HTTP_GET_TEXT, req_headers, false);
-        String status = (String)result.get("status");
-        String res_headers_str = (String)result.get("headers");
-        String res_body = (String)result.get("body");
+        String status = (String) result.get("status");
+        String res_headers_str = (String) result.get("headers");
+        String res_body = (String) result.get("body");
 
         JSONObject res_headers = (JSONObject) (new JSONParser()).parse(res_headers_str);
 
@@ -236,7 +236,7 @@ public class Ext_HttpClientTest {
         stubFor(get(urlEqualTo(PATH_HTTP_GET_STREAM))
                 .willReturn(aResponse()
                     .withStatus(200)
-                    .withBody(new byte[] { 1, 2, 3, 4 })
+                    .withBody(new byte[] {1, 2, 3, 4})
                     .withHeader("Content-Type", "image/jpeg")));
 
         NativeObject req_headers = new NativeObject();
@@ -249,9 +249,9 @@ public class Ext_HttpClientTest {
          * String uri, NativeObject headers
          */
         NativeObject result = ext_httpClient.get(MOCK_SERVER_URL + PATH_HTTP_GET_STREAM, req_headers, true);
-        String status = (String)result.get("status");
-        String res_headers = (String)result.get("headers");
-        PersoniumInputStream res_body = (PersoniumInputStream)result.get("body");
+        String status = (String) result.get("status");
+        String res_headers = (String) result.get("headers");
+        PersoniumInputStream res_body = (PersoniumInputStream) result.get("body");
 
         // stream to write file
         // Confirm the actually acquired image file.
@@ -286,9 +286,9 @@ public class Ext_HttpClientTest {
          */
         NativeObject result = ext_httpClient.postParam(
             MOCK_SERVER_URL + PATH_HTTP_POST_TEXT, req_headers, POST_CONTENT_TYPE, POST_PARAMS_TEXT);
-        String status = (String)result.get("status");
-        String res_headers_str = (String)result.get("headers");
-        String res_body = (String)result.get("body");
+        String status = (String) result.get("status");
+        String res_headers_str = (String) result.get("headers");
+        String res_body = (String) result.get("body");
 
 
         JSONObject res_headers = (JSONObject) (new JSONParser()).parse(res_headers_str);
@@ -306,7 +306,7 @@ public class Ext_HttpClientTest {
      * http_post_text_with_default_headers.
      */
     @SuppressWarnings("unchecked")
-	@Test
+    @Test
     public void http_post_text_with_default_headers() throws ParseException {
         stubFor(post(urlEqualTo(PATH_HTTP_POST_TEXT))
                 .willReturn(aResponse()
@@ -331,9 +331,9 @@ public class Ext_HttpClientTest {
          */
         NativeObject result = ext_httpClient.postParam(
             MOCK_SERVER_URL + PATH_HTTP_POST_TEXT, req_headers, POST_CONTENT_TYPE, POST_PARAMS_TEXT);
-        String status = (String)result.get("status");
-        String res_headers_str = (String)result.get("headers");
-        String res_body = (String)result.get("body");
+        String status = (String) result.get("status");
+        String res_headers_str = (String) result.get("headers");
+        String res_body = (String) result.get("body");
 
 
         JSONObject res_headers = (JSONObject) (new JSONParser()).parse(res_headers_str);
@@ -352,7 +352,7 @@ public class Ext_HttpClientTest {
      * http_post_text_with_content_type_default_headers.
      */
     @SuppressWarnings("unchecked")
-	@Test
+    @Test
     public void http_post_text_with_content_type_default_headers() throws ParseException {
         stubFor(post(urlEqualTo(PATH_HTTP_POST_TEXT))
                 .willReturn(aResponse()
@@ -377,9 +377,9 @@ public class Ext_HttpClientTest {
          */
         NativeObject result = ext_httpClient.postParam(
             MOCK_SERVER_URL + PATH_HTTP_POST_TEXT, req_headers, POST_CONTENT_TYPE, POST_PARAMS_TEXT);
-        String status = (String)result.get("status");
-        String res_headers_str = (String)result.get("headers");
-        String res_body = (String)result.get("body");
+        String status = (String) result.get("status");
+        String res_headers_str = (String) result.get("headers");
+        String res_body = (String) result.get("body");
 
 
         JSONObject res_headers = (JSONObject) (new JSONParser()).parse(res_headers_str);
@@ -444,14 +444,14 @@ public class Ext_HttpClientTest {
         }
 
         try {
-            byte [] buffer = new byte[BYTESIZE];
+            byte[] buffer = new byte[BYTESIZE];
             int len = 0;
-            while(true) {
+            while (true) {
                 if ((len = is.read(buffer)) == -1) {
                     throw new EOFException();
                 }
                 out.write(buffer, 0, len);
-                if(len < BYTESIZE) break;
+                if (len < BYTESIZE) break;
             }
             out.close();
         } catch (IOException e) {
@@ -472,16 +472,16 @@ public class Ext_HttpClientTest {
             e.printStackTrace();
         }
 
-        byte [] buffer = new byte[BYTESIZE];
+        byte[] buffer = new byte[BYTESIZE];
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
             int len = 0;
-            while(true) {
+            while (true) {
                 if ((len = fs.read(buffer)) == -1) {
                     throw new EOFException();
                 }
                 out.write(buffer, 0, len);
-                if(len < BYTESIZE) break;
+                if (len < BYTESIZE) break;
             }
         } catch (IOException e) {
             e.printStackTrace();
