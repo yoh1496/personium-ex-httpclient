@@ -13,11 +13,19 @@ For older version (v1.0.1), only "Get" & "POST" were supported. Please see the [
 ## Ignore SSL verification error
 It is possible to ignore the SSL verification error and perform HTTP request.
 You can ignore the SSL verification error by setting "IgnoreHostnameVerification" to "true" when instantiating HttpClient.
-```` Javascript
-var ignoreVerification = {"IgnoreHostnameVerification": true};
-var httpClient = new _p.extension.HttpClient(ignoreVerification);
+```` javascript
+var parameters = {"IgnoreHostnameVerification": true};
+var httpClient = new _p.extension.HttpClient(parameters);
 ````
 ` Ignoring SSL verification error can be severe security problem. It is necessary to pay attention when using it. `
+
+## Set default headers
+You can set default headers to HTTP request by setting "DefaultHeaders" when  
+instantiating HttpClient.
+```` Javascript
+var parameters= {"DefaultHeaders": {"X-Personium-RequestKey": "MyRequestKey"}};
+var httpClient = new _p.extension.HttpClient(parameters);
+````
 
 ## Usage (GET)
 
