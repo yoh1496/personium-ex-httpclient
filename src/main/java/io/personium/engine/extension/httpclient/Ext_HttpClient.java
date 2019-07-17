@@ -521,6 +521,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
      * @return SSL context.
      * @throws GeneralSecurityException security error
      */
+    @SuppressWarnings("PMD.ReturnEmptyArrayRatherThanNull")
     private SSLContext createSkipSSLVerifyContext() throws GeneralSecurityException {
         SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
         TrustManager tm = new X509TrustManager() {
