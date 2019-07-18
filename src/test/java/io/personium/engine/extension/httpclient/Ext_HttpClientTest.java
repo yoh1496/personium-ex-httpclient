@@ -156,10 +156,10 @@ public class Ext_HttpClientTest {
                     .withBody("body content")
                     .withHeader("Content-Type", "text/plain")));
 
-        JSONObject default_headers = new JSONObject();
-        default_headers.put(DEFAULT_HEADER_KEY, DEFAULT_HEADER_VALUE);
+        NativeObject default_headers = new NativeObject();
+        default_headers.put(DEFAULT_HEADER_KEY, default_headers, DEFAULT_HEADER_VALUE);
         NativeObject parameters = new NativeObject();
-        parameters.put(KEY_DEFAULT_HEADERS, parameters, default_headers.toString());
+        parameters.put(KEY_DEFAULT_HEADERS, parameters, default_headers);
 
         Ext_HttpClient ext_httpClient = new Ext_HttpClient(parameters);
 
@@ -198,10 +198,10 @@ public class Ext_HttpClientTest {
                     .withBody("body content")
                     .withHeader("Content-Type", "text/plain")));
 
-        JSONObject default_headers = new JSONObject();
-        default_headers.put(DEFAULT_HEADER_KEY, DEFAULT_HEADER_VALUE);
+        NativeObject default_headers = new NativeObject();
+        default_headers.put(DEFAULT_HEADER_KEY, default_headers, DEFAULT_HEADER_VALUE);
         NativeObject parameters = new NativeObject();
-        parameters.put(KEY_DEFAULT_HEADERS, parameters, default_headers.toString());
+        parameters.put(KEY_DEFAULT_HEADERS, parameters, default_headers);
 
         Ext_HttpClient ext_httpClient = new Ext_HttpClient(parameters);
 
@@ -314,10 +314,10 @@ public class Ext_HttpClientTest {
                     .withBody("body content")
                     .withHeader("Content-Type", "text/plain")));
 
-        JSONObject default_headers = new JSONObject();
-        default_headers.put(DEFAULT_HEADER_KEY, DEFAULT_HEADER_VALUE);
+        NativeObject default_headers = new NativeObject();
+        default_headers.put(DEFAULT_HEADER_KEY, default_headers, DEFAULT_HEADER_VALUE);
         NativeObject parameters = new NativeObject();
-        parameters.put(KEY_DEFAULT_HEADERS, parameters, default_headers.toString());
+        parameters.put(KEY_DEFAULT_HEADERS, parameters, default_headers);
 
         Ext_HttpClient ext_httpClient = new Ext_HttpClient(parameters);
 
@@ -360,10 +360,10 @@ public class Ext_HttpClientTest {
                     .withBody("body content")
                     .withHeader("Content-Type", "text/plain")));
 
-        JSONObject default_headers = new JSONObject();
-        default_headers.put("Content-Type", "application/json");
+        NativeObject default_headers = new NativeObject();
+        default_headers.put("Content-Type", default_headers, "application/json");
         NativeObject parameters = new NativeObject();
-        parameters.put(KEY_DEFAULT_HEADERS, parameters, default_headers.toString());
+        parameters.put(KEY_DEFAULT_HEADERS, parameters, default_headers);
 
         Ext_HttpClient ext_httpClient = new Ext_HttpClient(parameters);
 
