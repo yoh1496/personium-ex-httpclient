@@ -88,7 +88,8 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
     /**
      * Constructor.
      * @param parameters Json parameters.<p>
-     * SkipHostnameVerification true:Skip ssl verification.
+     * IgnoreHostnameVerification true:Ignore ssl verification.
+     * DefaultHeaders String: Set default headers.
      */
     @JSConstructor
     public Ext_HttpClient(NativeObject parameters) {
