@@ -16,8 +16,8 @@
  */
 package io.personium.engine.extension.httpclient;
 
-import static org.junit.Assert.assertEquals;
-import io.personium.engine.extension.wrapper.PersoniumInputStream;
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static org.junit.Assert.*;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -32,22 +32,33 @@ import java.io.InputStream;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpStatus;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mozilla.javascript.NativeObject;
+
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
+
+import io.personium.engine.extension.wrapper.PersoniumInputStream;
 
 @SuppressWarnings("unused")
 public class Ext_HttpClientTest {
 
+    // mock server
+    private static final String MOCK_SERVER_URL       = "http://localhost:8080";
+
     // http_get
-    private static final String URI_HTTP_GET_TEXT     = "http://get.example/";
-    private static final String URI_HTTP_GET_STREAM   = "http://get.example/";
+    private static final String PATH_HTTP_GET_TEXT    = "/getText";
+    private static final String PATH_HTTP_GET_STREAM  = "/getStream";
 
     // http_post
-    private static final String URI_HTTP_POST_TEXT    = "http://post.example/";
-    private static final String URI_HTTP_POST_STREAM  = "http://post.example/";
+    private static final String PATH_HTTP_POST_TEXT   = "/postText";
+    private static final String PATH_HTTP_POST_STREAM = "/postStream";
 
     private static final String POST_PARAMS_TEXT      = "key1=value1&key2=value2&key3=value3";
     private static final String POST_CONTENT_TYPE     = "application/x-www-form-urlencoded;";
@@ -68,10 +79,21 @@ public class Ext_HttpClientTest {
       + "R400r7HrFrfTaV9vSEwxa+kKx/6aibQq5ZnjcR5TzIJNuwfu0978a+BtF+JPhm50XxFo+l6/o97t+0WGpWkd1bT7XDrvjcFWw6qwyOCoPUVb0PQ7Lwxolnpum2"
       + "drp+nafAlta2ttEsUFtEihUjRFAVVVQAFAAAAArzY4Susa8Q6r5GrcvS/wDXz6bH3lfiXJp8KUskhgIrFxqOTxF/elHXTa+zUeW/KuXmS5m2v//Z";
 
+    // default headers
+    private static final String DEFAULT_HEADER_KEY    = "X-Personium-RequestKey";
+    private static final String DEFAULT_HEADER_VALUE  = "TestRequestKey";
+
     // headers
-    private static final String HEADER_KEY              = "Accept";
-    private static final String HEADER_VALUE            = "application/json";
-    
+    private static final String HEADER_KEY            = "X-Personium-Test";
+    private static final String HEADER_VALUE          = "Test";
+
+    // parameters json keys
+    private static final String KEY_SKIP_HOSTNAME_VERIFICATION = "IgnoreHostnameVerification";
+    private static final String KEY_DEFAULT_HEADERS            = "DefaultHeaders";
+
+    @Rule
+    public WireMockRule wireMockRule = new WireMockRule();
+
     @BeforeClass
     public static void beforeClass() {
 
@@ -91,7 +113,13 @@ public class Ext_HttpClientTest {
      * http_get_text.
      */
     @Test
-    public void http_get_text() {
+    public void http_get_text() throws ParseException {
+        stubFor(get(urlEqualTo(PATH_HTTP_GET_TEXT))
+                .willReturn(aResponse()
+                    .withStatus(HttpStatus.SC_OK)
+                    .withBody("body content")
+                    .withHeader("Content-Type", "text/plain")));
+
         NativeObject req_headers = new NativeObject();
         req_headers.put(HEADER_KEY, req_headers, HEADER_VALUE);
 
@@ -101,12 +129,103 @@ public class Ext_HttpClientTest {
          * ext_httpClient.get
          * String uri, NativeObject headers
          */
-        NativeObject result = ext_httpClient.get(URI_HTTP_GET_TEXT, req_headers, false);
-        String status = (String)result.get("status");
-        String res_headers = (String)result.get("headers");
-        String res_body = (String)result.get("body");
+        NativeObject result = ext_httpClient.get(MOCK_SERVER_URL + PATH_HTTP_GET_TEXT, req_headers, false);
+        String status = (String) result.get("status");
+        String res_headers_str = (String) result.get("headers");
+        String res_body = (String) result.get("body");
 
-        assertEquals(status, Integer.toString(HttpStatus.SC_OK));
+        JSONObject res_headers = (JSONObject) (new JSONParser()).parse(res_headers_str);
+
+        assertEquals(Integer.toString(HttpStatus.SC_OK), status);
+        assertEquals("text/plain", res_headers.get("Content-Type"));
+        assertEquals("body content", res_body);
+
+        verify(getRequestedFor(urlEqualTo(PATH_HTTP_GET_TEXT))
+                .withHeader(HEADER_KEY, matching(HEADER_VALUE)));
+    }
+
+    /*
+     * http_get_text_with_default_headers.
+     */
+    @SuppressWarnings("unchecked")
+    @Test
+    public void http_get_text_with_default_headers() throws ParseException {
+        stubFor(get(urlEqualTo(PATH_HTTP_GET_TEXT))
+                .willReturn(aResponse()
+                    .withStatus(HttpStatus.SC_OK)
+                    .withBody("body content")
+                    .withHeader("Content-Type", "text/plain")));
+
+        NativeObject default_headers = new NativeObject();
+        default_headers.put(DEFAULT_HEADER_KEY, default_headers, DEFAULT_HEADER_VALUE);
+        NativeObject parameters = new NativeObject();
+        parameters.put(KEY_DEFAULT_HEADERS, parameters, default_headers);
+
+        Ext_HttpClient ext_httpClient = new Ext_HttpClient(parameters);
+
+        NativeObject req_headers = new NativeObject();
+        req_headers.put(HEADER_KEY, req_headers, HEADER_VALUE);
+
+        /**
+         * ext_httpClient.get
+         * String uri, NativeObject headers
+         */
+        NativeObject result = ext_httpClient.get(MOCK_SERVER_URL + PATH_HTTP_GET_TEXT, req_headers, false);
+        String status = (String) result.get("status");
+        String res_headers_str = (String) result.get("headers");
+        String res_body = (String) result.get("body");
+
+        JSONObject res_headers = (JSONObject) (new JSONParser()).parse(res_headers_str);
+
+        assertEquals(Integer.toString(HttpStatus.SC_OK), status);
+        assertEquals("text/plain", res_headers.get("Content-Type"));
+        assertEquals("body content", res_body);
+
+        verify(getRequestedFor(urlEqualTo(PATH_HTTP_GET_TEXT))
+                .withHeader(HEADER_KEY, matching(HEADER_VALUE))
+                .withHeader(DEFAULT_HEADER_KEY, matching(DEFAULT_HEADER_VALUE)));
+    }
+
+    /*
+     * http_get_text_with_default_headers.
+     */
+    @SuppressWarnings("unchecked")
+    @Test
+    public void http_get_text_with_overridden_default_headers() throws ParseException {
+        stubFor(get(urlEqualTo(PATH_HTTP_GET_TEXT))
+                .willReturn(aResponse()
+                    .withStatus(HttpStatus.SC_OK)
+                    .withBody("body content")
+                    .withHeader("Content-Type", "text/plain")));
+
+        NativeObject default_headers = new NativeObject();
+        default_headers.put(DEFAULT_HEADER_KEY, default_headers, DEFAULT_HEADER_VALUE);
+        NativeObject parameters = new NativeObject();
+        parameters.put(KEY_DEFAULT_HEADERS, parameters, default_headers);
+
+        Ext_HttpClient ext_httpClient = new Ext_HttpClient(parameters);
+
+        NativeObject req_headers = new NativeObject();
+        req_headers.put(HEADER_KEY, req_headers, HEADER_VALUE);
+        req_headers.put(DEFAULT_HEADER_KEY, req_headers,  "Overridden");
+
+        /**
+         * ext_httpClient.get
+         * String uri, NativeObject headers
+         */
+        NativeObject result = ext_httpClient.get(MOCK_SERVER_URL + PATH_HTTP_GET_TEXT, req_headers, false);
+        String status = (String) result.get("status");
+        String res_headers_str = (String) result.get("headers");
+        String res_body = (String) result.get("body");
+
+        JSONObject res_headers = (JSONObject) (new JSONParser()).parse(res_headers_str);
+
+        assertEquals(Integer.toString(HttpStatus.SC_OK), status);
+        assertEquals("text/plain", res_headers.get("Content-Type"));
+        assertEquals("body content", res_body);
+
+        verify(getRequestedFor(urlEqualTo(PATH_HTTP_GET_TEXT))
+                .withHeader(DEFAULT_HEADER_KEY, matching("Overridden")));
     }
 
     /*
@@ -114,6 +233,12 @@ public class Ext_HttpClientTest {
      */
     @Test
     public void http_get_stream() {
+        stubFor(get(urlEqualTo(PATH_HTTP_GET_STREAM))
+                .willReturn(aResponse()
+                    .withStatus(200)
+                    .withBody(new byte[] {1, 2, 3, 4})
+                    .withHeader("Content-Type", "image/jpeg")));
+
         NativeObject req_headers = new NativeObject();
         req_headers.put(HEADER_KEY, req_headers, HEADER_VALUE);
 
@@ -123,23 +248,32 @@ public class Ext_HttpClientTest {
          * ext_httpClient.get
          * String uri, NativeObject headers
          */
-        NativeObject result = ext_httpClient.get(URI_HTTP_GET_STREAM, req_headers, true);
-        String status = (String)result.get("status");
-        String res_headers = (String)result.get("headers");
-        PersoniumInputStream res_body = (PersoniumInputStream)result.get("body");
+        NativeObject result = ext_httpClient.get(MOCK_SERVER_URL + PATH_HTTP_GET_STREAM, req_headers, true);
+        String status = (String) result.get("status");
+        String res_headers = (String) result.get("headers");
+        PersoniumInputStream res_body = (PersoniumInputStream) result.get("body");
 
         // stream to write file
         // Confirm the actually acquired image file.
 //        InputStreamToFile(res_body, POST_FILE_PATH, POST_WRITE_FILE);
 
-        assertEquals(status, Integer.toString(HttpStatus.SC_OK));
+        assertEquals(Integer.toString(HttpStatus.SC_OK), status);
+
+        verify(getRequestedFor(urlEqualTo(PATH_HTTP_GET_STREAM))
+                .withHeader(HEADER_KEY, matching(HEADER_VALUE)));
     }
 
     /*
      * http_post_text.
      */
     @Test
-    public void http_post_text() {
+    public void http_post_text() throws ParseException {
+        stubFor(post(urlEqualTo(PATH_HTTP_POST_TEXT))
+                .willReturn(aResponse()
+                    .withStatus(200)
+                    .withBody("body content")
+                    .withHeader("Content-Type", "text/plain")));
+
         NativeObject req_headers = new NativeObject();
         req_headers.put(HEADER_KEY, req_headers, HEADER_VALUE);
 
@@ -151,12 +285,112 @@ public class Ext_HttpClientTest {
          * NativeObject headers, boolean respondsAsStream
          */
         NativeObject result = ext_httpClient.postParam(
-            URI_HTTP_POST_TEXT, req_headers, POST_CONTENT_TYPE, POST_PARAMS_TEXT);
-        String status = (String)result.get("status");
-        String res_body = (String)result.get("body");
-        String res_headers = (String)result.get("headers");
+            MOCK_SERVER_URL + PATH_HTTP_POST_TEXT, req_headers, POST_CONTENT_TYPE, POST_PARAMS_TEXT);
+        String status = (String) result.get("status");
+        String res_headers_str = (String) result.get("headers");
+        String res_body = (String) result.get("body");
 
-        assertEquals(status, Integer.toString(HttpStatus.SC_OK));
+
+        JSONObject res_headers = (JSONObject) (new JSONParser()).parse(res_headers_str);
+
+        assertEquals(Integer.toString(HttpStatus.SC_OK), status);
+        assertEquals("text/plain", res_headers.get("Content-Type"));
+        assertEquals("body content", res_body);
+
+        verify(postRequestedFor(urlEqualTo(PATH_HTTP_POST_TEXT))
+                .withHeader(HEADER_KEY, matching(HEADER_VALUE))
+                .withHeader("Content-Type", matching(POST_CONTENT_TYPE)));
+    }
+
+    /*
+     * http_post_text_with_default_headers.
+     */
+    @SuppressWarnings("unchecked")
+    @Test
+    public void http_post_text_with_default_headers() throws ParseException {
+        stubFor(post(urlEqualTo(PATH_HTTP_POST_TEXT))
+                .willReturn(aResponse()
+                    .withStatus(200)
+                    .withBody("body content")
+                    .withHeader("Content-Type", "text/plain")));
+
+        NativeObject default_headers = new NativeObject();
+        default_headers.put(DEFAULT_HEADER_KEY, default_headers, DEFAULT_HEADER_VALUE);
+        NativeObject parameters = new NativeObject();
+        parameters.put(KEY_DEFAULT_HEADERS, parameters, default_headers);
+
+        Ext_HttpClient ext_httpClient = new Ext_HttpClient(parameters);
+
+        NativeObject req_headers = new NativeObject();
+        req_headers.put(HEADER_KEY, req_headers, HEADER_VALUE);
+
+        /**
+         * ext_httpClient.post text
+         * String uri, String body, String contentType,
+         * NativeObject headers, boolean respondsAsStream
+         */
+        NativeObject result = ext_httpClient.postParam(
+            MOCK_SERVER_URL + PATH_HTTP_POST_TEXT, req_headers, POST_CONTENT_TYPE, POST_PARAMS_TEXT);
+        String status = (String) result.get("status");
+        String res_headers_str = (String) result.get("headers");
+        String res_body = (String) result.get("body");
+
+
+        JSONObject res_headers = (JSONObject) (new JSONParser()).parse(res_headers_str);
+
+        assertEquals(Integer.toString(HttpStatus.SC_OK), status);
+        assertEquals("text/plain", res_headers.get("Content-Type"));
+        assertEquals("body content", res_body);
+
+        verify(postRequestedFor(urlEqualTo(PATH_HTTP_POST_TEXT))
+                .withHeader(HEADER_KEY, matching(HEADER_VALUE))
+                .withHeader(DEFAULT_HEADER_KEY, matching(DEFAULT_HEADER_VALUE))
+                .withHeader("Content-Type", matching(POST_CONTENT_TYPE)));
+    }
+
+    /*
+     * http_post_text_with_content_type_default_headers.
+     */
+    @SuppressWarnings("unchecked")
+    @Test
+    public void http_post_text_with_content_type_default_headers() throws ParseException {
+        stubFor(post(urlEqualTo(PATH_HTTP_POST_TEXT))
+                .willReturn(aResponse()
+                    .withStatus(200)
+                    .withBody("body content")
+                    .withHeader("Content-Type", "text/plain")));
+
+        NativeObject default_headers = new NativeObject();
+        default_headers.put("Content-Type", default_headers, "application/json");
+        NativeObject parameters = new NativeObject();
+        parameters.put(KEY_DEFAULT_HEADERS, parameters, default_headers);
+
+        Ext_HttpClient ext_httpClient = new Ext_HttpClient(parameters);
+
+        NativeObject req_headers = new NativeObject();
+        req_headers.put(HEADER_KEY, req_headers, HEADER_VALUE);
+
+        /**
+         * ext_httpClient.post text
+         * String uri, String body, String contentType,
+         * NativeObject headers, boolean respondsAsStream
+         */
+        NativeObject result = ext_httpClient.postParam(
+            MOCK_SERVER_URL + PATH_HTTP_POST_TEXT, req_headers, POST_CONTENT_TYPE, POST_PARAMS_TEXT);
+        String status = (String) result.get("status");
+        String res_headers_str = (String) result.get("headers");
+        String res_body = (String) result.get("body");
+
+
+        JSONObject res_headers = (JSONObject) (new JSONParser()).parse(res_headers_str);
+
+        assertEquals(Integer.toString(HttpStatus.SC_OK), status);
+        assertEquals("text/plain", res_headers.get("Content-Type"));
+        assertEquals("body content", res_body);
+
+        verify(postRequestedFor(urlEqualTo(PATH_HTTP_POST_TEXT))
+                .withHeader(HEADER_KEY, matching(HEADER_VALUE))
+                .withHeader("Content-Type", matching(POST_CONTENT_TYPE)));
     }
 
     /*
@@ -187,7 +421,7 @@ public class Ext_HttpClientTest {
          * NativeObject headers, boolean respondsAsStream
          */
 //        NativeObject result = ext_httpClient.postStream(
-//              URI_HTTP_POST_STREAM, req_headers, POST_CONTENT_TYPE, pis, "image.jpg");
+//              PATH_HTTP_POST_STREAM, req_headers, POST_CONTENT_TYPE, pis, "image.jpg");
 //
 //        String status = (String)result.get("status");
 //        String res_headers = (String)result.get("headers");
@@ -210,14 +444,14 @@ public class Ext_HttpClientTest {
         }
 
         try {
-            byte [] buffer = new byte[BYTESIZE];
+            byte[] buffer = new byte[BYTESIZE];
             int len = 0;
-            while(true) {
+            while (true) {
                 if ((len = is.read(buffer)) == -1) {
                     throw new EOFException();
                 }
                 out.write(buffer, 0, len);
-                if(len < BYTESIZE) break;
+                if (len < BYTESIZE) break;
             }
             out.close();
         } catch (IOException e) {
@@ -238,16 +472,16 @@ public class Ext_HttpClientTest {
             e.printStackTrace();
         }
 
-        byte [] buffer = new byte[BYTESIZE];
+        byte[] buffer = new byte[BYTESIZE];
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
             int len = 0;
-            while(true) {
+            while (true) {
                 if ((len = fs.read(buffer)) == -1) {
                     throw new EOFException();
                 }
                 out.write(buffer, 0, len);
-                if(len < BYTESIZE) break;
+                if (len < BYTESIZE) break;
             }
         } catch (IOException e) {
             e.printStackTrace();
