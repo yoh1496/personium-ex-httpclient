@@ -48,7 +48,6 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.apache.http.util.TextUtils;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
@@ -77,7 +76,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
     private boolean ignoreHostnameVerification = false;
 
     /** Default headers. */
-    private JSONObject defaultHeaders = null;
+    private NativeObject defaultHeaders = null;
 
     /**
      * Default constructor.
@@ -120,18 +119,12 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
         if (argParam == null) {
             return;
         }
-        if (!(argParam instanceof String)) {
-            String message = String.format("Parameter [%s] is not String.", KEY_DEFAULT_HEADERS);
+        if (!(argParam instanceof NativeObject)) {
+            String message = String.format("Parameter [%s] is not NativeObject.", KEY_DEFAULT_HEADERS);
             this.getLogger().info(message);
             throw ExtensionErrorConstructor.construct(message);
         }
-        try {
-            defaultHeaders = (JSONObject) (new JSONParser()).parse((String) argParam);
-        } catch (org.json.simple.parser.ParseException e) {
-            String message = String.format("Parameter [%s] is not JSON: %s.", KEY_DEFAULT_HEADERS, e.getMessage());
-            this.getLogger().info(message);
-            throw ExtensionErrorConstructor.construct(message);
-        }
+        defaultHeaders = (NativeObject) argParam;
     }
 
     /**
