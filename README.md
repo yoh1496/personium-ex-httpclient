@@ -7,17 +7,8 @@
 Please see [Setup Engine Extensions](https://personium.io/docs/en/server-operator/setup_engine_extensions.html).
 
 ## Note
-Supported methods are "GET", "POST", "PUT", "PATCH", "DELETE" only at this point.  
+Supported methods are "GET", "POST", "PUT", "PATCH", "DELETE" only at this point.
 For older version (v1.0.1), only "Get" & "POST" were supported. Please see the [here](OlderVersion.md) for details.
-
-## Ignore SSL verification error
-It is possible to ignore the SSL verification error and perform HTTP request.
-You can ignore the SSL verification error by setting "IgnoreHostnameVerification" to "true" when instantiating HttpClient.
-```` Javascript
-var ignoreVerification = {"IgnoreHostnameVerification": true};
-var httpClient = new _p.extension.HttpClient(ignoreVerification);
-````
-` Ignoring SSL verification error can be severe security problem. It is necessary to pay attention when using it. `
 
 ## Usage (GET)
 
@@ -203,6 +194,26 @@ var httpClient = new _p.extension.HttpClient(ignoreVerification);
   // Do something and then return data
   return createResponse(204, response.body);
 
+````
+
+## Constructor parameters
+
+### Ignore SSL verification error
+You can ignore the SSL verification error by setting "IgnoreHostnameVerification" to "true" when instantiating HttpClient.
+
+```` javascript
+var parameters = {"IgnoreHostnameVerification": true};
+var httpClient = new _p.extension.HttpClient(parameters);
+````
+` Ignoring SSL verification error can be severe security problem. It is necessary to pay attention when using it. `
+
+### Set default headers
+You can set default headers to HTTP request by setting "DefaultHeaders" when
+instantiating HttpClient.
+
+```` javascript
+var parameters= {"DefaultHeaders": {"X-Personium-RequestKey": "MyRequestKey"}};
+var httpClient = new _p.extension.HttpClient(parameters);
 ````
 
 ## License
