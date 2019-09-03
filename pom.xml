@@ -117,6 +117,8 @@
                         </goals>
                         <configuration>
                             <finalName>${final.name}</finalName>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>libs</shadedClassifierName>
                         </configuration>
                     </execution>
                 </executions>
@@ -249,4 +251,5 @@
             <url>http://personium.io/mvnrepo</url>
         </repository>
     </distributionManagement>
+
 </project>
