@@ -66,7 +66,7 @@ public class Ext_HttpClientTest {
     // file
     private static final String POST_FILE_PATH        = "/tmp/";
     private static final String POST_WRITE_FILE       = "test_write.jpg";
-    private static final String POST_READ_FILE        = "test_read.jpg";
+    private static final String POST_READ_FILE        = "test_read.png";
     private static final String POST_WRITE_BASE64     = "test_jpflag.jpg";
     private static final String BASE64_DATA           = "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYH"
       + "BwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA"
@@ -396,39 +396,53 @@ public class Ext_HttpClientTest {
     /*
      * http_post_stream.
      */
-//    @Test
-//    public void http_post_stream() {
-//        NativeObject req_headers = new NativeObject();
-//        req_headers.put(HEADER_KEY, req_headers, HEADER_VALUE);
-//
-//        Ext_HttpClient ext_httpClient = new Ext_HttpClient();
+    @Test
+    public void http_post_stream() {
+        stubFor(post(urlEqualTo(PATH_HTTP_POST_STREAM))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withBody("body content")
+                .withHeader("Content-Type", "text/plain")));
 
+        NativeObject req_headers = new NativeObject();
+        req_headers.put(HEADER_KEY, req_headers, HEADER_VALUE);
+
+        NativeObject default_headers = new NativeObject();
+        default_headers.put("Content-Type", default_headers, "application/json");
+        NativeObject parameters = new NativeObject();
+        parameters.put(KEY_DEFAULT_HEADERS, parameters, default_headers);
+
+        Ext_HttpClient ext_httpClient = new Ext_HttpClient(parameters);
+
+        InputStream is = null;
+        String postFilePath = ClassLoader.getSystemResource(POST_READ_FILE).getPath();
         // For Test File operation.
-//      try {
-//          is = FileToInputStream(POST_FILE_PATH + POST_READ_FILE);
-//      } catch (FileNotFoundException e) {
-//          e.printStackTrace();
-//      }
-//      InputStreamToFile(body, POST_FILE_PATH, POST_WRITE_BASE64);
-//      String base64_str = FileToBase64(POST_FILE_PATH + POST_READ_FILE);
+        try {
+            is = FileToInputStream(postFilePath);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
 
-//        InputStream is = Base64ToInputStream(BASE64_DATA);
-//        PersoniumInputStream pis = new PersoniumInputStream((InputStream) is);
+        InputStreamToFile(is, POST_FILE_PATH, POST_WRITE_BASE64);
+        String base64_str = FileToBase64(postFilePath);
+
+        InputStream _is = Base64ToInputStream(BASE64_DATA);
+        PersoniumInputStream pis = new PersoniumInputStream((InputStream) _is);
 
         /**
          * ext_httpClient.post stream
          * String uri, String body, String contentType,
          * NativeObject headers, boolean respondsAsStream
          */
-//        NativeObject result = ext_httpClient.postStream(
-//              PATH_HTTP_POST_STREAM, req_headers, POST_CONTENT_TYPE, pis, "image.jpg");
-//
-//        String status = (String)result.get("status");
-//        String res_headers = (String)result.get("headers");
-//        String res_body = (String)result.get("body");
-//
-//        assertEquals(status, Integer.toString(HttpStatus.SC_OK));
-//    }
+        NativeObject result = ext_httpClient.postStream(
+            MOCK_SERVER_URL + PATH_HTTP_POST_STREAM, req_headers, POST_CONTENT_TYPE, pis, "image.jpg");
+
+        String status = (String)result.get("status");
+        String res_headers = (String)result.get("headers");
+        String res_body = (String)result.get("body");
+
+        assertEquals(status, Integer.toString(HttpStatus.SC_OK));
+    }
 
     /*
      * conversion InputStream to File.

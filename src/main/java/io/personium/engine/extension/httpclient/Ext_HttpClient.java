@@ -42,6 +42,7 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
@@ -174,22 +175,21 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
         return post(uri, headers, contentType, params, null, null);
     }
 
-//    /**
-//     * postStream (PersoniumInputStream).
-//     * @param uri String
-//     * @param headers NativeObject
-//     * @param contentType String
-//     * @param params String
-//     * @param pis PersoniumInputStream
-//     * @param fileName String
-//     * @return NativeObject
-//     */
-// PostのStreamは、動作が確認できていないためコメント。
-//    @JSFunction
-//    public NativeObject postStream(String uri, NativeObject headers, String contentType,
-//            PersoniumInputStream pis, String fileName) {
-//        return post(uri, headers, contentType, null, pis, fileName);
-//    }
+   /**
+    * postStream (PersoniumInputStream).
+    * @param uri String
+    * @param headers NativeObject
+    * @param contentType String
+    * @param params String
+    * @param pis PersoniumInputStream
+    * @param fileName String
+    * @return NativeObject
+    */
+    @JSFunction
+    public NativeObject postStream(String uri, NativeObject headers, String contentType,
+            PersoniumInputStream pis, String fileName) {
+        return post(uri, headers, contentType, null, pis, fileName);
+    }
 
     /**
      * post (String).
@@ -308,7 +308,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
         // Verification.
         verifyParamIsEmpty(url, "url");
         verifyParamIsEmpty(contentType, "contentType");
-        verifyParamIsEmpty(params, "body");
+        if (params != null) verifyParamIsEmpty(params, "body");
 
         HttpPost post = new HttpPost(url);
         // set contentType
@@ -316,7 +316,11 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
         // set headers
         addRequestHeaders(post, headers, contentType);
         // set body
-        addRequestBody(post, params);
+        if (params != null) {
+            addRequestBody(post, params);
+        } else {
+            addRequestBody(post, pis);
+        }
 
         try (CloseableHttpClient httpclient = createHttpClient()) {
             // Request
@@ -439,6 +443,19 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
         }
         return request;
     }
+
+     /**
+     * Add http request body.
+     * @param request http request method object
+     * @param bodyStream http body input stream
+     * @return Request with body added
+     */
+    private HttpRequestBase addRequestBody(HttpEntityEnclosingRequestBase request, InputStream bodyStream) {
+        // set body
+        request.setEntity(new InputStreamEntity(bodyStream));
+        return request;
+    }
+
 
     /**
      * Create response from HttpResponse to javascript.
