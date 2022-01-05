@@ -65,7 +65,7 @@ jobs:
         name: "Release v${{ env.RELEASE_VERSION }}"
         tag_name: "v${{ env.RELEASE_VERSION }}"
         body_path: ${{ github.workflow }}_CHANGELOG.md
-        draft: True
+        draft: true
         files: |
           target/${{ env.COMPONENT }}-${{ env.RELEASE_VERSION }}.${{ env.EXT_PACKAGING }}
         prerelease: false
