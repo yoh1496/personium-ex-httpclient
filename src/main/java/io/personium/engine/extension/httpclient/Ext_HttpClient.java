@@ -171,7 +171,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
      */
     @JSFunction
     public NativeObject postParam(String uri, NativeObject headers, String contentType, String params) {
-        return post(uri, headers, contentType, params, null, null);
+        return doPost(uri, headers, contentType, params, null);
     }
 
 //    /**
@@ -181,14 +181,13 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
 //     * @param contentType String
 //     * @param params String
 //     * @param pis PersoniumInputStream
-//     * @param fileName String
 //     * @return NativeObject
 //     */
 // PostのStreamは、動作が確認できていないためコメント。
 //    @JSFunction
 //    public NativeObject postStream(String uri, NativeObject headers, String contentType,
-//            PersoniumInputStream pis, String fileName) {
-//        return post(uri, headers, contentType, null, pis, fileName);
+//            PersoniumInputStream pis) {
+//        return doPost(uri, headers, contentType, null, pis);
 //    }
 
     /**
@@ -201,7 +200,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
      */
     @JSFunction
     public NativeObject post(String uri, NativeObject headers, String contentType, String params) {
-        return post(uri, headers, contentType, params, null, null);
+        return doPost(uri, headers, contentType, params, null);
     }
 
     /**
@@ -215,7 +214,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
      */
     @JSFunction
     public NativeObject putParam(String uri, NativeObject headers, String contentType, String params) {
-        return put(uri, headers, contentType, params, null, null);
+        return doPut(uri, headers, contentType, params, null);
     }
 
     /**
@@ -228,7 +227,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
      */
     @JSFunction
     public NativeObject put(String uri, NativeObject headers, String contentType, String params) {
-        return put(uri, headers, contentType, params, null, null);
+        return doPut(uri, headers, contentType, params, null);
     }
 
     /**
@@ -298,17 +297,16 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
      * @param contentType String
      * @param params String
      * @param is PersoniumInputStream
-     * @param fileName String
      * @return NativeObject
      */
-    private NativeObject post(String url, NativeObject headers, String contentType,
-                              String params, PersoniumInputStream pis, String fileName) {
+    private NativeObject doPost(String url, NativeObject headers, String contentType,
+                              String bodyString, PersoniumInputStream pis) {
         boolean respondsAsStream = false;
 
         // Verification.
         verifyParamIsEmpty(url, "url");
         verifyParamIsEmpty(contentType, "contentType");
-        verifyParamIsEmpty(params, "body");
+        verifyParamIsEmpty(bodyString, "body");
 
         HttpPost post = new HttpPost(url);
         // set contentType
@@ -316,7 +314,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
         // set headers
         addRequestHeaders(post, headers, contentType);
         // set body
-        addRequestBody(post, params);
+        addRequestBody(post, bodyString);
 
         try (CloseableHttpClient httpclient = createHttpClient()) {
             // Request
@@ -333,19 +331,18 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
      * @param url String
      * @param headers NativeObject
      * @param contentType String
-     * @param params String
+     * @param bodyString String
      * @param is PersoniumInputStream
-     * @param fileName String
      * @return NativeObject
      */
-    private NativeObject put(String url, NativeObject headers, String contentType,
-                              String params, PersoniumInputStream pis, String fileName) {
+    private NativeObject doPut(String url, NativeObject headers, String contentType,
+                              String bodyString, PersoniumInputStream pis) {
         boolean respondsAsStream = false;
 
         // Verification.
         verifyParamIsEmpty(url, "url");
         verifyParamIsEmpty(contentType, "contentType");
-        verifyParamIsEmpty(params, "body");
+        verifyParamIsEmpty(bodyString, "body");
 
         HttpPut put = new HttpPut(url);
         // set contentType
@@ -353,7 +350,7 @@ public class Ext_HttpClient extends AbstractExtensionScriptableObject { // CHECK
         // set headers
         addRequestHeaders(put, headers, contentType);
         // set body
-        addRequestBody(put, params);
+        addRequestBody(put, bodyString);
 
         try (CloseableHttpClient httpclient = createHttpClient()) {
             // Request
