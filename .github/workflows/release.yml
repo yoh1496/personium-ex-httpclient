@@ -52,7 +52,8 @@ jobs:
         git push origin master
 
     - name: Create Release Note
-      run: awk '/##/{i++}i==1' CHANGELOG.md | tail +2 > ${{ github.workflow }}_CHANGELOG.md
+      run: |
+        awk '/##/{i++}i==1' CHANGELOG.md | tail +2 > ${{ github.workflow }}_CHANGELOG.md
 
     - name: Build with maven
       run: |
@@ -64,10 +65,10 @@ jobs:
         name: "Release v${{ env.RELEASE_VERSION }}"
         tag_name: "v${{ env.RELEASE_VERSION }}"
         body_path: ${{ github.workflow }}_CHANGELOG.md
-        draft: True
+        draft: true
         files: |
           target/${{ env.COMPONENT }}-${{ env.RELEASE_VERSION }}.${{ env.EXT_PACKAGING }}
-        prerelease: False
+        prerelease: false
         target_commitish: master
 
     - name: Delete Temporary Release Note
