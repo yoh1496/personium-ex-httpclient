@@ -25,9 +25,6 @@
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
-            <properties>
-                <final.name>personium-ex-httpclient</final.name>
-            </properties>
         </profile>
     </profiles>
     <dependencies>
@@ -123,7 +120,6 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <finalName>${final.name}</finalName>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
                             <shadedClassifierName>libs</shadedClassifierName>
                         </configuration>
